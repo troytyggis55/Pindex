@@ -48,7 +48,7 @@ export default function AppLayout() {
           tabBarLabel: () => null,
         }}
       />
-      <Tabs.Screen name="collection" options={{ title: 'Collection', tabBarLabel: 'Collection' }} />
+      <Tabs.Screen name="collection" options={{ title: 'Personal', tabBarLabel: 'Personal' }} />
       <Tabs.Screen name="users" options={{ href: null }} />
       <Tabs.Screen name="orgs" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
