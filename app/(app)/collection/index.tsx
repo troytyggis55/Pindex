@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import type { UserPin, Pin } from '@/types'
@@ -15,6 +16,7 @@ const FLAG_LABELS: Record<Flag, string> = {
 
 export default function CollectionScreen() {
   const { session } = useAuth()
+  const router = useRouter()
   const [items, setItems] = useState<CollectionItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -65,9 +67,16 @@ export default function CollectionScreen() {
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-        My Pins ({items.length})
-      </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold' }}>My Pins ({items.length})</Text>
+        <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
+              {session?.user.email?.[0].toUpperCase() ?? '?'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={items}
         keyExtractor={i => i.id}

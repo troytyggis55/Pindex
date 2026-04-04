@@ -63,7 +63,9 @@ export default function TradeDetailScreen() {
     return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Trade not found</Text></View>
   }
 
-  const myId = session!.user.id
+  if (!session) return null
+
+  const myId = session.user.id
   const isInitiator = trade.initiator_id === myId
   const isReceiver = trade.receiver_profile_id === myId
   const canConfirm = isReceiver && trade.status === 'unconfirmed'

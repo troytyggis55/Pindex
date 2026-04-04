@@ -47,8 +47,10 @@ export default function TradesScreen() {
     return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
   }
 
+  if (!session) return null
+
   const renderTrade = ({ item }: { item: TradeWithDetails }) => {
-    const myId = session!.user.id
+    const myId = session.user.id
     const isInitiator = item.initiator_id === myId
 
     const partnerName = isInitiator
