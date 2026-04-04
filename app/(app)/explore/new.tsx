@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 
 export default function NewPinScreen() {
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [editionSize, setEditionSize] = useState('')
@@ -38,7 +40,7 @@ export default function NewPinScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
       <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
         <Text style={{ color: '#555' }}>← Back</Text>
       </TouchableOpacity>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
@@ -125,6 +126,7 @@ function PinSearchSection({
 export default function NewTradeScreen() {
   const { session } = useAuth()
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
   const [partnerQuery, setPartnerQuery] = useState('')
   const [profileResults, setProfileResults] = useState<ProfileResult[]>([])
@@ -290,7 +292,7 @@ export default function NewTradeScreen() {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
+      contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
     >
       <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>

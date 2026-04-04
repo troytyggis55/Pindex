@@ -1,5 +1,6 @@
 import { Tabs, useRouter } from 'expo-router'
 import { TouchableOpacity, View, Text } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 function NewTradeButton() {
   const router = useRouter()
@@ -31,8 +32,14 @@ function NewTradeButton() {
 }
 
 export default function AppLayout() {
+  const insets = useSafeAreaInsets()
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { paddingTop: insets.top },
+      }}
+    >
       <Tabs.Screen name="explore" options={{ title: 'Explore', tabBarLabel: 'Explore' }} />
       <Tabs.Screen
         name="trades"
