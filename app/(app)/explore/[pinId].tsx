@@ -7,6 +7,7 @@ import type { Pin, Organization } from '@/types'
 
 type PinWithOrg = Pin & { organization: Organization | null }
 type Status = 'collection' | 'trading' | 'wishlist'
+type Trader = { user_id: string; profile: { username: string } }
 
 export default function PinDetailScreen() {
   const { pinId } = useLocalSearchParams<{ pinId: string }>()
@@ -15,13 +16,14 @@ export default function PinDetailScreen() {
   const [pin, setPin] = useState<PinWithOrg | null>(null)
   const [userPinId, setUserPinId] = useState<string | null>(null)
   const [currentStatus, setCurrentStatus] = useState<string | null>(null)
+  const [traders, setTraders] = useState<Trader[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     if (!pinId || !session?.user) return
     const fetchData = async () => {
-      const [pinRes, collectionRes] = await Promise.all([
+      const [pinRes, collectionRes, tradersRes] = await Promise.all([
         supabase
           .from('pins')
           .select('*, organization:organizations(*)')
@@ -33,12 +35,19 @@ export default function PinDetailScreen() {
           .eq('user_id', session.user.id)
           .eq('pin_id', pinId)
           .maybeSingle(),
+        supabase
+          .from('user_pins')
+          .select('user_id, profile:profiles(username)')
+          .eq('pin_id', pinId)
+          .eq('status', 'trading')
+          .neq('user_id', session.user.id),
       ])
       if (pinRes.data) setPin(pinRes.data as PinWithOrg)
       if (collectionRes.data) {
         setUserPinId(collectionRes.data.id)
         setCurrentStatus(collectionRes.data.status)
       }
+      if (tradersRes.data) setTraders(tradersRes.data as Trader[])
       setLoading(false)
     }
     fetchData()
@@ -107,6 +116,23 @@ export default function PinDetailScreen() {
         <Text style={{ color: '#555', marginBottom: 16 }}>
           Released: {new Date(pin.released_at).toLocaleDateString()}
         </Text>
+      )}
+
+      {traders.length > 0 && (
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ fontWeight: '700', marginBottom: 8 }}>
+            Users trading this ({traders.length})
+          </Text>
+          {traders.map(t => (
+            <TouchableOpacity
+              key={t.user_id}
+              onPress={() => router.push(`/(app)/users/${t.user_id}`)}
+              style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f0f0f0' }}
+            >
+              <Text style={{ color: '#333' }}>@{t.profile.username} →</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
 
       <View style={{ borderTopWidth: 1, borderColor: '#e0e0e0', paddingTop: 16, marginTop: 8 }}>
