@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
@@ -19,22 +19,27 @@ export default function ExploreScreen() {
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  useFocusEffect(useCallback(() => {
+  const load = useCallback(async () => {
     const myId = session!.user.id
-    Promise.all([
+    const [pinsRes, orgsRes, usersRes, followsRes] = await Promise.all([
       supabase.from('pins').select('*, organization:organizations(*)').order('created_at', { ascending: false }),
       supabase.from('organizations').select('*').order('name'),
       supabase.from('profiles').select('id, username').neq('id', myId).order('username'),
       supabase.from('follows').select('following_id').eq('follower_id', myId),
-    ]).then(([pinsRes, orgsRes, usersRes, followsRes]) => {
-      if (pinsRes.data) setPins(pinsRes.data as PinWithOrg[])
-      if (orgsRes.data) setOrgs(orgsRes.data)
-      if (usersRes.data) setUsers(usersRes.data)
-      if (followsRes.data) setFollowingIds(new Set(followsRes.data.map(f => f.following_id)))
-      setLoading(false)
-    })
-  }, []))
+    ])
+    if (pinsRes.data) setPins(pinsRes.data as PinWithOrg[])
+    if (orgsRes.data) setOrgs(orgsRes.data)
+    if (usersRes.data) setUsers(usersRes.data)
+    if (followsRes.data) setFollowingIds(new Set(followsRes.data.map(f => f.following_id)))
+    setLoading(false)
+    setRefreshing(false)
+  }, [])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  const onRefresh = () => { setRefreshing(true); load() }
 
   const toggleFollow = async (userId: string) => {
     const myId = session!.user.id
@@ -97,6 +102,7 @@ export default function ExploreScreen() {
       {tab === 'pins' && (
         <FlatList
           data={filteredPins}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={p => p.id}
           keyboardShouldPersistTaps="handled"
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -119,6 +125,7 @@ export default function ExploreScreen() {
       {tab === 'orgs' && (
         <FlatList
           data={filteredOrgs}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={o => o.id}
           keyboardShouldPersistTaps="handled"
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -137,6 +144,7 @@ export default function ExploreScreen() {
       {tab === 'users' && (
         <FlatList
           data={filteredUsers}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={u => u.id}
           keyboardShouldPersistTaps="handled"
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}

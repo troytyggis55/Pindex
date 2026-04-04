@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
@@ -32,12 +32,12 @@ export default function PersonalScreen() {
   const [trades, setTrades] = useState<TradeWithDetails[]>([])
   const [following, setFollowing] = useState<FollowingUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  useFocusEffect(useCallback(() => {
+  const load = useCallback(async () => {
     if (!session?.user) return
     const myId = session.user.id
-    setLoading(true)
-    Promise.all([
+    const [pinsRes, tradesRes, followingRes] = await Promise.all([
       supabase
         .from('user_pins')
         .select('*, pin:pins(*)')
@@ -47,24 +47,31 @@ export default function PersonalScreen() {
         .from('trades')
         .select(`
           *,
-          initiator:profiles!trades_initiator_id_fkey(id, username),
-          receiver_profile:profiles!trades_receiver_profile_id_fkey(id, username),
-          receiver_contact:contacts!trades_receiver_contact_id_fkey(id, name),
+          initiator:profiles!initiator_id(id, username),
+          receiver_profile:profiles!receiver_profile_id(id, username),
+          receiver_contact:contacts!receiver_contact_id(id, name),
           trade_items(id, side, pin:pins(id, name))
         `)
         .or(`initiator_id.eq.${myId},receiver_profile_id.eq.${myId}`)
-        .order('created_at', { ascending: false }),
+        .order('confirmed_at', { ascending: false, nullsFirst: true }),
       supabase
         .from('follows')
-        .select('following_id, profile:profiles!follows_following_id_fkey(id, username)')
+        .select('following_id, profile:profiles!following_id(id, username)')
         .eq('follower_id', myId),
-    ]).then(([pinsRes, tradesRes, followingRes]) => {
-      if (pinsRes.data) setPins(pinsRes.data as CollectionItem[])
-      if (tradesRes.data) setTrades(tradesRes.data as TradeWithDetails[])
-      if (followingRes.data) setFollowing(followingRes.data as FollowingUser[])
-      setLoading(false)
-    })
-  }, []))
+    ])
+    if (pinsRes.error) console.error('[personal] pins error:', pinsRes.error)
+    if (tradesRes.error) console.error('[personal] trades error:', tradesRes.error)
+    if (followingRes.error) console.error('[personal] following error:', followingRes.error)
+    if (pinsRes.data) setPins(pinsRes.data as CollectionItem[])
+    if (tradesRes.data) setTrades(tradesRes.data as TradeWithDetails[])
+    if (followingRes.data) setFollowing(followingRes.data as FollowingUser[])
+    setLoading(false)
+    setRefreshing(false)
+  }, [session?.user.id])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  const onRefresh = () => { setRefreshing(true); load() }
 
   const toggleFlag = async (id: string, flag: Flag, current: boolean) => {
     const { error } = await supabase.from('user_pins').update({ [flag]: !current }).eq('id', id)
@@ -95,6 +102,8 @@ export default function PersonalScreen() {
   if (loading) {
     return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
   }
+
+  const refreshControl = <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
@@ -133,6 +142,7 @@ export default function PersonalScreen() {
         <FlatList
           data={pins}
           keyExtractor={i => i.id}
+          refreshControl={refreshControl}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No pins yet — browse Explore to add some!</Text>}
           renderItem={({ item }) => (
@@ -164,48 +174,74 @@ export default function PersonalScreen() {
       )}
 
       {/* My Trades */}
-      {tab === 'trades' && (
-        <FlatList
-          data={trades}
-          keyExtractor={t => t.id}
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No trades recorded yet.</Text>}
-          renderItem={({ item }) => {
-            if (!session) return null
-            const myId = session.user.id
-            const isInitiator = item.initiator_id === myId
-            const partnerName = isInitiator
-              ? (item.receiver_profile?.username ?? item.receiver_contact?.name ?? '?')
-              : item.initiator.username
-            const gave = item.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
-            const received = item.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
-            const isUnconfirmed = item.status === 'unconfirmed'
-            return (
-              <TouchableOpacity
-                onPress={() => router.push(`/(app)/trades/${item.id}`)}
-                style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12 }}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <Text style={{ fontWeight: '600' }}>{partnerName}</Text>
-                  <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: isUnconfirmed ? '#fef9c3' : '#dcfce7' }}>
-                    <Text style={{ fontSize: 12, color: isUnconfirmed ? '#854d0e' : '#166534' }}>
-                      {isUnconfirmed ? 'Unconfirmed' : 'Confirmed'}
-                    </Text>
-                  </View>
+      {tab === 'trades' && session && (() => {
+        const myId = session.user.id
+        const pendingConfirmation = trades.filter(t => t.receiver_profile_id === myId && t.status === 'unconfirmed')
+        const myTrades = trades.filter(t => t.initiator_id === myId || (t.receiver_profile_id === myId && t.status === 'confirmed'))
+
+        const renderTrade = (item: TradeWithDetails, isReceiver = false) => {
+          const isInitiator = item.initiator_id === myId
+          const partnerName = isInitiator
+            ? (item.receiver_profile?.username ?? item.receiver_contact?.name ?? '?')
+            : item.initiator.username
+          const gave = item.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
+          const received = item.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
+          return (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => router.push(`/(app)/trades/${item.id}`)}
+              style={{ borderWidth: 1, borderColor: isReceiver ? '#fbbf24' : '#e0e0e0', borderRadius: 8, padding: 12 }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontWeight: '600' }}>{partnerName}</Text>
+                <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, backgroundColor: item.status === 'unconfirmed' ? '#fef9c3' : '#dcfce7' }}>
+                  <Text style={{ fontSize: 12, color: item.status === 'unconfirmed' ? '#854d0e' : '#166534' }}>
+                    {item.status === 'unconfirmed' ? 'Unconfirmed' : 'Confirmed'}
+                  </Text>
                 </View>
-                <Text style={{ color: '#555', fontSize: 13 }}>Gave: {gave.map(t => t.pin.name).join(', ') || '—'}</Text>
-                <Text style={{ color: '#555', fontSize: 13 }}>Received: {received.map(t => t.pin.name).join(', ') || '—'}</Text>
-              </TouchableOpacity>
-            )
-          }}
-        />
-      )}
+              </View>
+              <Text style={{ color: '#555', fontSize: 13 }}>Gave: {gave.map(t => t.pin.name).join(', ') || '—'}</Text>
+              <Text style={{ color: '#555', fontSize: 13 }}>Received: {received.map(t => t.pin.name).join(', ') || '—'}</Text>
+            </TouchableOpacity>
+          )
+        }
+
+        return (
+          <FlatList
+            data={myTrades}
+            keyExtractor={t => t.id}
+            refreshControl={refreshControl}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            ListHeaderComponent={pendingConfirmation.length > 0 ? (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontWeight: '700', fontSize: 15, marginBottom: 8 }}>
+                  Awaiting your confirmation ({pendingConfirmation.length})
+                </Text>
+                {pendingConfirmation.map(t => (
+                  <View key={t.id} style={{ marginBottom: 8 }}>
+                    {renderTrade(t, true)}
+                  </View>
+                ))}
+                {myTrades.length > 0 && (
+                  <Text style={{ fontWeight: '700', fontSize: 15, marginTop: 8, marginBottom: 8 }}>My trades</Text>
+                )}
+              </View>
+            ) : null}
+            ListEmptyComponent={pendingConfirmation.length === 0
+              ? <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No trades recorded yet.</Text>
+              : null
+            }
+            renderItem={({ item }) => renderTrade(item)}
+          />
+        )
+      })()}
 
       {/* Following */}
       {tab === 'following' && (
         <FlatList
           data={following}
           keyExtractor={f => f.following_id}
+          refreshControl={refreshControl}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Not following anyone yet.</Text>}
           renderItem={({ item }) => (

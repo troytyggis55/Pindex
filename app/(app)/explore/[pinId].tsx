@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import type { Pin, Organization, UserPin } from '@/types'
@@ -24,11 +24,12 @@ export default function PinDetailScreen() {
   const [userPin, setUserPin] = useState<UserPinFlags | null>(null)
   const [traders, setTraders] = useState<WantToTrader[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [adding, setAdding] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!pinId || !session?.user) return
-    Promise.all([
+    const [pinRes, upRes, tradersRes] = await Promise.all([
       supabase.from('pins').select('*, organization:organizations(*)').eq('id', pinId).single(),
       supabase
         .from('user_pins')
@@ -42,13 +43,17 @@ export default function PinDetailScreen() {
         .eq('pin_id', pinId)
         .eq('want_to_trade', true)
         .neq('user_id', session.user.id),
-    ]).then(([pinRes, upRes, tradersRes]) => {
-      if (pinRes.data) setPin(pinRes.data as PinWithOrg)
-      if (upRes.data) setUserPin(upRes.data)
-      if (tradersRes.data) setTraders(tradersRes.data as WantToTrader[])
-      setLoading(false)
-    })
-  }, [pinId])
+    ])
+    if (pinRes.data) setPin(pinRes.data as PinWithOrg)
+    if (upRes.data) setUserPin(upRes.data)
+    if (tradersRes.data) setTraders(tradersRes.data as WantToTrader[])
+    setLoading(false)
+    setRefreshing(false)
+  }, [pinId, session?.user.id])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  const onRefresh = () => { setRefreshing(true); load() }
 
   const addToCollection = async () => {
     if (!session?.user || !pinId) return
@@ -80,7 +85,11 @@ export default function PinDetailScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 24 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
         <Text style={{ color: '#555' }}>← Back</Text>
       </TouchableOpacity>
@@ -129,10 +138,7 @@ export default function PinDetailScreen() {
                     key={flag}
                     onPress={() => toggleFlag(flag)}
                     style={{
-                      flex: 1,
-                      padding: 10,
-                      borderRadius: 8,
-                      alignItems: 'center',
+                      flex: 1, padding: 10, borderRadius: 8, alignItems: 'center',
                       backgroundColor: active ? '#000' : '#eee',
                     }}
                   >

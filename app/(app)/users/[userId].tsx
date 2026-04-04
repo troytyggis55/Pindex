@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import type { UserPin, Pin } from '@/types'
@@ -15,22 +15,27 @@ export default function UserProfileScreen() {
   const [wantToTradePins, setWantToTradePins] = useState<PinItem[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!userId) return
     const myId = session!.user.id
-    Promise.all([
+    const [profileRes, pinsRes, followRes] = await Promise.all([
       supabase.from('profiles').select('username').eq('id', userId).single(),
       supabase.from('user_pins').select('*, pin:pins(*)').eq('user_id', userId).eq('want_to_trade', true),
       supabase.from('follows').select('follower_id').eq('follower_id', myId).eq('following_id', userId).maybeSingle(),
-    ]).then(([profileRes, pinsRes, followRes]) => {
-      if (profileRes.data) setUsername(profileRes.data.username)
-      if (pinsRes.data) setWantToTradePins(pinsRes.data as PinItem[])
-      setIsFollowing(!!followRes.data)
-      setLoading(false)
-    })
+    ])
+    if (profileRes.data) setUsername(profileRes.data.username)
+    if (pinsRes.data) setWantToTradePins(pinsRes.data as PinItem[])
+    setIsFollowing(!!followRes.data)
+    setLoading(false)
+    setRefreshing(false)
   }, [userId])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
+
+  const onRefresh = () => { setRefreshing(true); load() }
 
   const toggleFollow = async () => {
     const myId = session!.user.id
@@ -50,7 +55,11 @@ export default function UserProfileScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 24 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
         <Text style={{ color: '#555' }}>← Back</Text>
       </TouchableOpacity>

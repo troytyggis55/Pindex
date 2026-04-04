@@ -28,9 +28,9 @@ export default function TradeDetailScreen() {
       .from('trades')
       .select(`
         *,
-        initiator:profiles!trades_initiator_id_fkey(id, username),
-        receiver_profile:profiles!trades_receiver_profile_id_fkey(id, username),
-        receiver_contact:contacts!trades_receiver_contact_id_fkey(id, name),
+        initiator:profiles!initiator_id(id, username),
+        receiver_profile:profiles!receiver_profile_id(id, username),
+        receiver_contact:contacts!receiver_contact_id(id, name),
         trade_items(id, side, pin:pins(id, name))
       `)
       .eq('id', tradeId)
