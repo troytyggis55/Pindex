@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
@@ -6,17 +6,12 @@ import { useAuth } from '@/context/auth'
 import type { Trade, TradeItem, Pin } from '@/types'
 
 type Profile = { id: string; username: string }
+type ContactRow = { id: string; name: string }
 type TradeWithDetails = Trade & {
   initiator: Profile
-  receiver: Profile
+  receiver_profile: Profile | null
+  receiver_contact: ContactRow | null
   trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Pending',
-  accepted: 'Accepted',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
 }
 
 export default function TradesScreen() {
@@ -33,10 +28,12 @@ export default function TradesScreen() {
       .select(`
         *,
         initiator:profiles!trades_initiator_id_fkey(id, username),
-        receiver:profiles!trades_receiver_id_fkey(id, username),
-        trade_items(id, side, owner_id, pin:pins(id, name))
+        receiver_profile:profiles!trades_receiver_profile_id_fkey(id, username),
+        receiver_contact:contacts!trades_receiver_contact_id_fkey(id, name),
+        trade_items(id, side, pin:pins(id, name))
       `)
-      .or(`initiator_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
+      .or(`initiator_id.eq.${session.user.id},receiver_profile_id.eq.${session.user.id}`)
+      .order('confirmed_at', { ascending: false, nullsFirst: true })
     if (!error && data) setTrades(data as TradeWithDetails[])
     setLoading(false)
     setRefreshing(false)
@@ -46,44 +43,46 @@ export default function TradesScreen() {
 
   const onRefresh = () => { setRefreshing(true); fetchTrades() }
 
-  const incoming = trades.filter(
-    t => t.receiver_id === session?.user.id && t.status === 'pending'
-  )
-  const others = trades.filter(
-    t => !(t.receiver_id === session?.user.id && t.status === 'pending')
-  )
-
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    )
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
   }
 
   const renderTrade = ({ item }: { item: TradeWithDetails }) => {
     const myId = session!.user.id
     const isInitiator = item.initiator_id === myId
-    const counterparty = isInitiator ? item.receiver : item.initiator
-    const offered = item.trade_items.filter(t => t.side === 'offered')
-    const requested = item.trade_items.filter(t => t.side === 'requested')
+
+    const partnerName = isInitiator
+      ? (item.receiver_profile?.username ?? item.receiver_contact?.name ?? '?')
+      : item.initiator.username
+
+    const gave = item.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
+    const received = item.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
+
+    const isUnconfirmed = item.status === 'unconfirmed'
 
     return (
       <TouchableOpacity
         onPress={() => router.push(`/(app)/trades/${item.id}`)}
         style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, marginBottom: 12 }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-          <Text style={{ fontWeight: '600' }}>
-            {isInitiator ? `To: ${counterparty.username}` : `From: ${counterparty.username}`}
-          </Text>
-          <Text style={{ color: '#555', fontSize: 13 }}>{STATUS_LABEL[item.status] ?? item.status}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Text style={{ fontWeight: '600' }}>{partnerName}</Text>
+          <View style={{
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: 4,
+            backgroundColor: isUnconfirmed ? '#fef9c3' : '#dcfce7',
+          }}>
+            <Text style={{ fontSize: 12, color: isUnconfirmed ? '#854d0e' : '#166534' }}>
+              {isUnconfirmed ? 'Unconfirmed' : 'Confirmed'}
+            </Text>
+          </View>
         </View>
         <Text style={{ color: '#555', fontSize: 13 }}>
-          You offer: {offered.map(t => t.pin.name).join(', ') || '—'}
+          Gave: {gave.map(t => t.pin.name).join(', ') || '—'}
         </Text>
         <Text style={{ color: '#555', fontSize: 13 }}>
-          You want: {requested.map(t => t.pin.name).join(', ') || '—'}
+          Received: {received.map(t => t.pin.name).join(', ') || '—'}
         </Text>
       </TouchableOpacity>
     )
@@ -94,30 +93,23 @@ export default function TradesScreen() {
       style={{ flex: 1 }}
       contentContainerStyle={{ padding: 16 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      data={others}
+      data={trades}
       keyExtractor={t => t.id}
       ListHeaderComponent={
-        <>
-          {incoming.length > 0 && (
-            <View style={{ marginBottom: 20 }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
-                Incoming requests ({incoming.length})
-              </Text>
-              {incoming.map(t => renderTrade({ item: t }))}
-            </View>
-          )}
-
-          {others.length > 0 && (
-            <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 8 }}>All trades</Text>
-          )}
-        </>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold' }}>Trades</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/trades/new')}
+            style={{ backgroundColor: '#000', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>+ Record</Text>
+          </TouchableOpacity>
+        </View>
       }
       ListEmptyComponent={
-        incoming.length === 0 ? (
-          <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>
-            No trades yet. Browse the Explore tab to find pins and users to trade with.
-          </Text>
-        ) : null
+        <Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>
+          No trades recorded yet. Tap "+ Record" to log a trade.
+        </Text>
       }
       renderItem={renderTrade}
     />

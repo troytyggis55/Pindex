@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:supabase.com)",
       "WebFetch(domain:docs.expo.dev)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\trygv\\\\repos\\\\Pindex\\\\types\\\\supabase.ts' -Encoding Unicode | Out-String\")",
+      "Bash(npx supabase:*)"
     ]
   }
 }

@@ -6,9 +6,11 @@ import { useAuth } from '@/context/auth'
 import type { Trade, TradeItem, Pin } from '@/types'
 
 type Profile = { id: string; username: string }
+type ContactRow = { id: string; name: string }
 type TradeWithDetails = Trade & {
   initiator: Profile
-  receiver: Profile
+  receiver_profile: Profile | null
+  receiver_contact: ContactRow | null
   trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
 }
 
@@ -18,7 +20,7 @@ export default function TradeDetailScreen() {
   const router = useRouter()
   const [trade, setTrade] = useState<TradeWithDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [acting, setActing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     if (!tradeId) return
@@ -27,8 +29,9 @@ export default function TradeDetailScreen() {
       .select(`
         *,
         initiator:profiles!trades_initiator_id_fkey(id, username),
-        receiver:profiles!trades_receiver_id_fkey(id, username),
-        trade_items(id, side, owner_id, pin:pins(id, name))
+        receiver_profile:profiles!trades_receiver_profile_id_fkey(id, username),
+        receiver_contact:contacts!trades_receiver_contact_id_fkey(id, name),
+        trade_items(id, side, pin:pins(id, name))
       `)
       .eq('id', tradeId)
       .single()
@@ -38,53 +41,40 @@ export default function TradeDetailScreen() {
       })
   }, [tradeId])
 
-  const updateStatus = async (status: string) => {
-    setActing(true)
-    const update: Record<string, string> = { status }
-    if (status === 'completed') update.completed_at = new Date().toISOString()
-    const { error } = await supabase.from('trades').update(update).eq('id', tradeId)
+  const confirmTrade = async () => {
+    setConfirming(true)
+    const { error } = await supabase
+      .from('trades')
+      .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+      .eq('id', tradeId)
     if (error) {
       Alert.alert('Error', error.message)
     } else {
-      setTrade(prev => prev ? { ...prev, status } : null)
+      setTrade(prev => prev ? { ...prev, status: 'confirmed', confirmed_at: new Date().toISOString() } : null)
     }
-    setActing(false)
-  }
-
-  const confirmAction = (label: string, status: string, destructive = false) => {
-    Alert.alert(label, `Are you sure?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: label,
-        style: destructive ? 'destructive' : 'default',
-        onPress: () => updateStatus(status),
-      },
-    ])
+    setConfirming(false)
   }
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    )
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
   }
 
   if (!trade) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Trade not found</Text>
-      </View>
-    )
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Trade not found</Text></View>
   }
 
   const myId = session!.user.id
   const isInitiator = trade.initiator_id === myId
-  const isReceiver = trade.receiver_id === myId
-  const counterparty = isInitiator ? trade.receiver : trade.initiator
+  const isReceiver = trade.receiver_profile_id === myId
+  const canConfirm = isReceiver && trade.status === 'unconfirmed'
 
-  const offered = trade.trade_items.filter(t => t.side === 'offered')
-  const requested = trade.trade_items.filter(t => t.side === 'requested')
+  const partnerName = isInitiator
+    ? (trade.receiver_profile?.username ?? trade.receiver_contact?.name ?? '?')
+    : trade.initiator.username
+
+  // Items from the viewer's perspective
+  const gave = trade.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
+  const received = trade.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
@@ -92,25 +82,32 @@ export default function TradeDetailScreen() {
         <Text style={{ color: '#555' }}>← Back</Text>
       </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Trade</Text>
-        <Text style={{ color: '#555', fontWeight: '600', textTransform: 'capitalize' }}>
-          {trade.status}
-        </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Trade with {partnerName}</Text>
+        <View style={{
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: 6,
+          backgroundColor: trade.status === 'unconfirmed' ? '#fef9c3' : '#dcfce7',
+        }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: trade.status === 'unconfirmed' ? '#854d0e' : '#166534' }}>
+            {trade.status === 'unconfirmed' ? 'Unconfirmed' : 'Confirmed'}
+          </Text>
+        </View>
       </View>
 
-      <Text style={{ color: '#555', marginBottom: 20 }}>
-        {isInitiator ? `Proposed to ${counterparty.username}` : `Proposed by ${counterparty.username}`}
-      </Text>
-
-      <View style={{ marginBottom: 20 }}>
-        <Text style={{ fontWeight: '700', marginBottom: 8 }}>
-          {isInitiator ? 'You offer' : `${trade.initiator.username} offers`}
+      {trade.confirmed_at && (
+        <Text style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
+          Confirmed {new Date(trade.confirmed_at).toLocaleDateString()}
         </Text>
-        {offered.length === 0 ? (
+      )}
+
+      <View style={{ marginBottom: 20, marginTop: 16 }}>
+        <Text style={{ fontWeight: '700', marginBottom: 8 }}>You gave</Text>
+        {gave.length === 0 ? (
           <Text style={{ color: '#888' }}>Nothing</Text>
         ) : (
-          offered.map(item => (
+          gave.map(item => (
             <View key={item.id} style={{ paddingVertical: 4 }}>
               <Text>• {item.pin.name}</Text>
             </View>
@@ -119,13 +116,11 @@ export default function TradeDetailScreen() {
       </View>
 
       <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontWeight: '700', marginBottom: 8 }}>
-          {isInitiator ? 'You want' : `${trade.initiator.username} wants`}
-        </Text>
-        {requested.length === 0 ? (
+        <Text style={{ fontWeight: '700', marginBottom: 8 }}>You received</Text>
+        {received.length === 0 ? (
           <Text style={{ color: '#888' }}>Nothing</Text>
         ) : (
-          requested.map(item => (
+          received.map(item => (
             <View key={item.id} style={{ paddingVertical: 4 }}>
               <Text>• {item.pin.name}</Text>
             </View>
@@ -133,53 +128,18 @@ export default function TradeDetailScreen() {
         )}
       </View>
 
-      {trade.completed_at && (
-        <Text style={{ color: '#555', marginBottom: 16 }}>
-          Completed: {new Date(trade.completed_at).toLocaleDateString()}
-        </Text>
+      {canConfirm && (
+        <TouchableOpacity
+          onPress={() => Alert.alert('Confirm trade', 'Confirm that this trade happened?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Confirm', onPress: confirmTrade },
+          ])}
+          disabled={confirming}
+          style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
+        >
+          <Text style={{ color: '#fff' }}>Confirm trade</Text>
+        </TouchableOpacity>
       )}
-
-      {/* Actions */}
-      <View style={{ gap: 10 }}>
-        {isReceiver && trade.status === 'pending' && (
-          <>
-            <TouchableOpacity
-              onPress={() => updateStatus('accepted')}
-              disabled={acting}
-              style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff' }}>Accept trade</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => confirmAction('Decline', 'cancelled', true)}
-              disabled={acting}
-              style={{ borderWidth: 1, borderColor: '#dc2626', padding: 14, borderRadius: 8, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#dc2626' }}>Decline</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {trade.status === 'accepted' && (
-          <TouchableOpacity
-            onPress={() => confirmAction('Mark as completed', 'completed')}
-            disabled={acting}
-            style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#fff' }}>Mark as completed</Text>
-          </TouchableOpacity>
-        )}
-
-        {isInitiator && trade.status === 'pending' && (
-          <TouchableOpacity
-            onPress={() => confirmAction('Cancel trade', 'cancelled', true)}
-            disabled={acting}
-            style={{ borderWidth: 1, borderColor: '#dc2626', padding: 14, borderRadius: 8, alignItems: 'center' }}
-          >
-            <Text style={{ color: '#dc2626' }}>Cancel trade</Text>
-          </TouchableOpacity>
-        )}
-      </View>
     </ScrollView>
   )
 }

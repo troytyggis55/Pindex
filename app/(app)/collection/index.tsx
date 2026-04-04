@@ -5,39 +5,43 @@ import { useAuth } from '@/context/auth'
 import type { UserPin, Pin } from '@/types'
 
 type CollectionItem = UserPin & { pin: Pin }
+type Flag = 'in_collection' | 'wishlisted' | 'want_to_trade'
 
-const STATUSES = ['collection', 'trading', 'wishlist'] as const
-type Status = (typeof STATUSES)[number]
+const FLAG_LABELS: Record<Flag, string> = {
+  in_collection: 'Collection',
+  wishlisted: 'Wishlist',
+  want_to_trade: 'Trade',
+}
 
 export default function CollectionScreen() {
   const { session } = useAuth()
   const [items, setItems] = useState<CollectionItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchCollection = async () => {
+  useEffect(() => {
     if (!session?.user) return
-    const { data, error } = await supabase
+    supabase
       .from('user_pins')
       .select('*, pin:pins(*)')
       .eq('user_id', session.user.id)
       .order('acquired_at', { ascending: false })
-    if (!error && data) setItems(data as CollectionItem[])
-    setLoading(false)
-  }
+      .then(({ data, error }) => {
+        if (!error && data) setItems(data as CollectionItem[])
+        setLoading(false)
+      })
+  }, [])
 
-  useEffect(() => { fetchCollection() }, [])
-
-  const updateStatus = async (id: string, status: Status) => {
-    const { error } = await supabase.from('user_pins').update({ status }).eq('id', id)
+  const toggleFlag = async (id: string, flag: Flag, current: boolean) => {
+    const { error } = await supabase.from('user_pins').update({ [flag]: !current }).eq('id', id)
     if (!error) {
-      setItems(prev => prev.map(i => (i.id === id ? { ...i, status } : i)))
+      setItems(prev => prev.map(i => (i.id === id ? { ...i, [flag]: !current } : i)))
     } else {
       Alert.alert('Error', error.message)
     }
   }
 
   const removePin = async (id: string) => {
-    Alert.alert('Remove pin', 'Remove this pin from your collection?', [
+    Alert.alert('Remove pin', 'Remove this pin from your list?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -62,7 +66,7 @@ export default function CollectionScreen() {
   return (
     <View style={{ flex: 1, padding: 16 }}>
       <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 12 }}>
-        My Collection ({items.length})
+        My Pins ({items.length})
       </Text>
       <FlatList
         data={items}
@@ -75,24 +79,27 @@ export default function CollectionScreen() {
         }
         renderItem={({ item }) => (
           <View style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '600' }}>{item.pin.name}</Text>
-            <Text style={{ color: '#555', marginBottom: 8 }}>Status: {item.status}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 10 }}>{item.pin.name}</Text>
             <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-              {STATUSES.map(s => (
-                <TouchableOpacity
-                  key={s}
-                  onPress={() => updateStatus(item.id, s)}
-                  disabled={item.status === s}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 6,
-                    backgroundColor: item.status === s ? '#000' : '#eee',
-                  }}
-                >
-                  <Text style={{ color: item.status === s ? '#fff' : '#333', fontSize: 13 }}>{s}</Text>
-                </TouchableOpacity>
-              ))}
+              {(Object.keys(FLAG_LABELS) as Flag[]).map(flag => {
+                const active = item[flag] as boolean
+                return (
+                  <TouchableOpacity
+                    key={flag}
+                    onPress={() => toggleFlag(item.id, flag, active)}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      borderRadius: 6,
+                      backgroundColor: active ? '#000' : '#eee',
+                    }}
+                  >
+                    <Text style={{ color: active ? '#fff' : '#333', fontSize: 13 }}>
+                      {FLAG_LABELS[flag]}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
               <TouchableOpacity
                 onPress={() => removePin(item.id)}
                 style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: '#fee2e2' }}
