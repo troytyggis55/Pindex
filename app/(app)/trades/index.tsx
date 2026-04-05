@@ -101,7 +101,7 @@ export default function TradesScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <Text style={{ fontSize: 22, fontWeight: 'bold' }}>Trades</Text>
           <TouchableOpacity
-            onPress={() => router.push('/(app)/trades/new')}
+            onPress={() => router.push('/trades/new')}
             style={{ backgroundColor: '#000', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
           >
             <Text style={{ color: '#fff', fontWeight: '600' }}>+ Record</Text>

@@ -132,7 +132,7 @@ export default function ExploreScreen() {
           ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No organizations found.</Text>}
           renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => router.push(`/(app)/orgs/${item.id}`)}
+              onPress={() => router.push(`/orgs/${item.id}`)}
               style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12 }}
             >
               <Text style={{ fontSize: 15, fontWeight: '600' }}>{item.name}</Text>
@@ -153,7 +153,7 @@ export default function ExploreScreen() {
             const isFollowing = followingIds.has(item.id)
             return (
               <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, gap: 8 }}>
-                <TouchableOpacity onPress={() => router.push(`/(app)/users/${item.id}`)} style={{ flex: 1 }}>
+                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)} style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '600' }}>@{item.username}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity

@@ -6,7 +6,7 @@ function NewTradeButton() {
   const router = useRouter()
   return (
     <TouchableOpacity
-      onPress={() => router.push('/(app)/trades/new')}
+      onPress={() => router.push('/trades/new')}
       style={{ alignItems: 'center', justifyContent: 'center' }}
     >
       <View
@@ -49,10 +49,6 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen name="collection" options={{ title: 'Personal', tabBarLabel: 'Personal' }} />
-      <Tabs.Screen name="users" options={{ href: null }} />
-      <Tabs.Screen name="orgs" options={{ href: null }} />
-      <Tabs.Screen name="admin" options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   )
 }

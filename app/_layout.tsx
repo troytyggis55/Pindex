@@ -20,7 +20,7 @@ function RootLayoutNav() {
       if (!inAuth) router.replace('/(auth)/login')
     } else if (!profile) {
       router.replace('/(auth)/complete-profile')
-    } else if (!inApp) {
+    } else if (inAuth) {
       router.replace('/(app)/collection')
     }
   }, [session, profile, loading, profileLoading])

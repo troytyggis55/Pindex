@@ -110,7 +110,7 @@ export default function PersonalScreen() {
       {/* Header */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: 'bold' }}>Personal</Text>
-        <TouchableOpacity onPress={() => router.push('/(app)/profile')}>
+        <TouchableOpacity onPress={() => router.push('/profile')}>
           <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>
               {session?.user.email?.[0].toUpperCase() ?? '?'}
@@ -246,7 +246,7 @@ export default function PersonalScreen() {
           ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Not following anyone yet.</Text>}
           renderItem={({ item }) => (
             <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, gap: 8 }}>
-              <TouchableOpacity onPress={() => router.push(`/(app)/users/${item.following_id}`)} style={{ flex: 1 }}>
+              <TouchableOpacity onPress={() => router.push(`/users/${item.following_id}`)} style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: '600' }}>@{item.profile.username}</Text>
               </TouchableOpacity>
               <TouchableOpacity

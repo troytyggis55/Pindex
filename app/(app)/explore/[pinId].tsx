@@ -117,7 +117,7 @@ export default function PinDetailScreen() {
           {traders.map(t => (
             <TouchableOpacity
               key={t.user_id}
-              onPress={() => router.push(`/(app)/users/${t.user_id}`)}
+              onPress={() => router.push(`/users/${t.user_id}`)}
               style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f0f0f0' }}
             >
               <Text style={{ color: '#333' }}>@{t.profile.username} →</Text>
