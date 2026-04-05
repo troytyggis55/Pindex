@@ -49,6 +49,10 @@ When a new user signs up, a name-match check runs against all existing users' co
 - There is one general pin browsing page for discovery
 - The trade recording flow has its own dedicated page/modal with a pin search that surfaces three result groups: pins in the user's collection, all other pins in the DB, and a "create new pin" option
 
+## Task tracking
+
+Planned features are tracked in `TODO.md` at the repo root. Each item is a checkbox. Remove the item from `TODO.md` once it is fully implemented.
+
 ## Tech stack
 
 - **Expo (React Native)** with TypeScript
