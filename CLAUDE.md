@@ -58,6 +58,11 @@ Planned features are tracked in `TODO.md` at the repo root. Each item is a check
 - **Expo (React Native)** with TypeScript
 - **NativeWind** for styling (Tailwind CSS syntax)
 - **Supabase** for auth, database, and storage
+- **Lucide** (`lucide-react-native`) for all icons — do not use other icon libraries
 - Generated DB types live in `types/supabase.ts` — regenerate with `npx supabase gen types typescript --linked > types/supabase.ts`
 - Supabase client singleton is at `lib/supabase.ts`
 - Friendly type aliases are in `types/index.ts`
+
+## Frontend / design
+
+Design decisions (visual style, color palette, typography, screen layouts, component patterns) are documented in `DESIGN.md` at the repo root. Only read `DESIGN.md` when the task involves UI work — skip it for backend, data, or logic-only tasks.
