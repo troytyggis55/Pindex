@@ -203,6 +203,7 @@ Only accessible to org admins. Reachable from the org page or the user's profile
 
 ## Future / Out of Scope for Now
 - Bilingual (Norwegian/English) support — deferred; all UI in English
+- Dark mode — deferred; build light mode only for now
 - SVG auto-processing from photos — Level 2 pin image
 - 3D pin model rendering — Level 3 pin image
 - Duplicate trade detection UX

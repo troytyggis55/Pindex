@@ -7,7 +7,10 @@
       "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\trygv\\\\repos\\\\Pindex\\\\types\\\\supabase.ts' -Encoding Unicode | Out-String\")",
       "Bash(npx supabase:*)",
       "Bash(iconv -f UTF-16LE -t UTF-8 /c/Users/trygv/repos/Pindex/types/supabase.ts)",
-      "Bash(iconv:*)"
+      "Bash(iconv:*)",
+      "Bash(npx expo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

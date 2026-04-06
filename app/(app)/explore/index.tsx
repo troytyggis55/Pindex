@@ -1,13 +1,25 @@
 import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
+import { Search, Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
+import { PinCard } from '@/components/ui/pin-card'
+import { OrgBadge } from '@/components/ui/org-badge'
+import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Pin, Organization } from '@/types'
 
 type Tab = 'pins' | 'orgs' | 'users'
 type PinWithOrg = Pin & { organization: Organization | null }
 type ProfileRow = { id: string; username: string }
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'pins', label: 'Pins' },
+  { key: 'orgs', label: 'Organizations' },
+  { key: 'users', label: 'Users' },
+]
+
+const TAB_BAR_BOTTOM_OFFSET = 84 // floating nav height + padding
 
 export default function ExploreScreen() {
   const { session } = useAuth()
@@ -58,112 +70,207 @@ export default function ExploreScreen() {
   const filteredUsers = q ? users.filter(u => u.username.toLowerCase().includes(q)) : users
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
   }
 
+  const placeholder = tab === 'pins' ? 'Search pins...' : tab === 'orgs' ? 'Search organizations...' : 'Search users...'
+
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 22, fontWeight: 'bold' }}>Explore</Text>
-        {tab === 'pins' && (
-          <TouchableOpacity
-            onPress={() => router.push('/(app)/explore/new')}
-            style={{ backgroundColor: '#000', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>+ New Pin</Text>
-          </TouchableOpacity>
-        )}
+    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+      {/* Header */}
+      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Explore</Text>
+          {tab === 'pins' && (
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/explore/new')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: Colors.deepBlack,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: Radius.btn,
+              }}
+            >
+              <Plus size={15} color="#fff" strokeWidth={2.5} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>New pin</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Search bar */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#f0f0ee',
+          borderRadius: Radius.btn,
+          paddingHorizontal: 12,
+          marginBottom: 12,
+          gap: 8,
+        }}>
+          <Search size={16} color={Colors.dark.muted} strokeWidth={2} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={placeholder}
+            placeholderTextColor={Colors.dark.muted}
+            style={{ flex: 1, fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack, paddingVertical: 10 }}
+          />
+        </View>
+
+        {/* Tab chips */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {TABS.map(({ key, label }) => (
+            <TouchableOpacity
+              key={key}
+              onPress={() => { setTab(key); setQuery('') }}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderRadius: Radius.btn,
+                backgroundColor: tab === key ? Colors.deepBlack : 'transparent',
+                borderWidth: 1,
+                borderColor: tab === key ? Colors.deepBlack : '#d0d0ce',
+              }}
+            >
+              <Text style={{
+                fontFamily: 'Monda_700Bold',
+                fontSize: 13,
+                color: tab === key ? '#fff' : Colors.dark.muted,
+              }}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        {(['pins', 'orgs', 'users'] as Tab[]).map(t => (
-          <TouchableOpacity
-            key={t}
-            onPress={() => { setTab(t); setQuery('') }}
-            style={{
-              flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
-              backgroundColor: tab === t ? '#000' : '#f0f0f0',
-            }}
-          >
-            <Text style={{ color: tab === t ? '#fff' : '#555', fontWeight: '600', fontSize: 13 }}>
-              {t === 'pins' ? 'Pins' : t === 'orgs' ? 'Organizations' : 'Users'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder={`Search ${tab === 'pins' ? 'pins' : tab === 'orgs' ? 'organizations' : 'users'}...`}
-        style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 10, marginBottom: 12 }}
-      />
-
+      {/* Pins grid */}
       {tab === 'pins' && (
         <FlatList
           data={filteredPins}
+          numColumns={2}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={p => p.id}
           keyboardShouldPersistTaps="handled"
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No pins found.</Text>}
+          columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 20 }}
+          ListEmptyComponent={
+            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+              No pins found.
+            </Text>
+          }
           renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => router.push(`/(app)/explore/${item.id}`)}
-              style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12 }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '600' }}>{item.name}</Text>
-              <Text style={{ color: '#555', fontSize: 13 }}>{item.organization?.name ?? 'Independent'}</Text>
-              {item.description ? (
-                <Text style={{ color: '#888', fontSize: 13, marginTop: 4 }} numberOfLines={1}>{item.description}</Text>
-              ) : null}
-            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <PinCard
+                id={item.id}
+                name={item.name}
+                imageUrl={item.image_url}
+                orgName={item.organization?.name ?? 'Independent'}
+                orgLogoUrl={item.organization?.logo_url}
+                isConfirmed={item.organization_id != null}
+                onPress={() => router.push(`/(app)/explore/${item.id}`)}
+              />
+            </View>
           )}
         />
       )}
 
+      {/* Orgs list */}
       {tab === 'orgs' && (
         <FlatList
           data={filteredOrgs}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={o => o.id}
           keyboardShouldPersistTaps="handled"
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No organizations found.</Text>}
+          contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
+          ListEmptyComponent={
+            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+              No organizations found.
+            </Text>
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => router.push(`/orgs/${item.id}`)}
-              style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                backgroundColor: '#fff',
+                borderRadius: Radius.card,
+                padding: 14,
+              }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '600' }}>{item.name}</Text>
+              <OrgBadge name={item.name} logoUrl={item.logo_url} size={40} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+                {item.name}
+              </Text>
             </TouchableOpacity>
           )}
         />
       )}
 
+      {/* Users list */}
       {tab === 'users' && (
         <FlatList
           data={filteredUsers}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={u => u.id}
           keyboardShouldPersistTaps="handled"
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          ListEmptyComponent={<Text style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>No users found.</Text>}
+          contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
+          ListEmptyComponent={
+            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+              No users found.
+            </Text>
+          }
           renderItem={({ item }) => {
             const isFollowing = followingIds.has(item.id)
             return (
-              <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, gap: 8 }}>
-                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)} style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600' }}>@{item.username}</Text>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#fff',
+                borderRadius: Radius.card,
+                padding: 12,
+                gap: 12,
+              }}>
+                {/* Avatar */}
+                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)}>
+                  <View style={{
+                    width: 40, height: 40, borderRadius: 20,
+                    backgroundColor: Colors.deepBlack,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
+                      {item.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)} style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
+                    @{item.username}
+                  </Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => toggleFollow(item.id)}
                   style={{
-                    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 6,
-                    backgroundColor: isFollowing ? '#f0f0f0' : '#000',
+                    paddingHorizontal: 14,
+                    paddingVertical: 6,
+                    borderRadius: Radius.btn,
+                    backgroundColor: isFollowing ? 'transparent' : Colors.deepBlack,
+                    borderWidth: 1,
+                    borderColor: isFollowing ? '#d0d0ce' : Colors.deepBlack,
                   }}
                 >
-                  <Text style={{ color: isFollowing ? '#555' : '#fff', fontWeight: '600', fontSize: 13 }}>
+                  <Text style={{
+                    fontFamily: 'Monda_700Bold',
+                    fontSize: 12,
+                    color: isFollowing ? Colors.dark.muted : '#fff',
+                  }}>
                     {isFollowing ? 'Following' : 'Follow'}
                   </Text>
                 </TouchableOpacity>

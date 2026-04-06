@@ -1,20 +1,28 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl, Image } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
+import { ChevronLeft, Users } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
+import { StatusChipRow } from '@/components/ui/status-chip'
+import { OrgBadge } from '@/components/ui/org-badge'
+import { Colors, Radius, Spacing } from '@/constants/theme'
+import type { FlagKey } from '@/constants/theme'
 import type { Pin, Organization, UserPin } from '@/types'
 
 type PinWithOrg = Pin & { organization: Organization | null }
 type UserPinFlags = Pick<UserPin, 'id' | 'in_collection' | 'wishlisted' | 'want_to_trade'>
 type WantToTrader = { user_id: string; profile: { username: string } }
-type Flag = 'in_collection' | 'wishlisted' | 'want_to_trade'
+type DetailTab = 'info' | 'details' | 'trade'
 
-const FLAG_LABELS: Record<Flag, string> = {
-  in_collection: 'Collection',
-  wishlisted: 'Wishlist',
-  want_to_trade: 'Trade',
-}
+const DETAIL_TABS: { key: DetailTab; label: string }[] = [
+  { key: 'info', label: 'Info' },
+  { key: 'details', label: 'Details' },
+  { key: 'trade', label: 'Trade' },
+]
+
+const HEADER_HEIGHT = 260
+const TAB_BAR_BOTTOM_OFFSET = 84
 
 export default function PinDetailScreen() {
   const { pinId } = useLocalSearchParams<{ pinId: string }>()
@@ -26,6 +34,7 @@ export default function PinDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [detailTab, setDetailTab] = useState<DetailTab>('info')
 
   const load = useCallback(async () => {
     if (!pinId || !session?.user) return
@@ -68,7 +77,7 @@ export default function PinDetailScreen() {
     setAdding(false)
   }
 
-  const toggleFlag = async (flag: Flag) => {
+  const toggleFlag = async (flag: FlagKey) => {
     if (!userPin) return
     const next = !userPin[flag]
     const { error } = await supabase.from('user_pins').update({ [flag]: next }).eq('id', userPin.id)
@@ -77,92 +86,278 @@ export default function PinDetailScreen() {
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
   }
 
   if (!pin) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Pin not found</Text></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><Text style={{ fontFamily: 'Monda_400Regular' }}>Pin not found</Text></View>
   }
 
+  const orgColor = Colors.orgFallback // future: pin.organization?.color
+  const orgName = pin.organization?.name ?? 'Independent'
+
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        stickyHeaderIndices={[0]}
+      >
+        {/* Full-bleed colored header */}
+        <View style={{ height: HEADER_HEIGHT, backgroundColor: orgColor }}>
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: Radius.btn,
+            }}
+          >
+            <ChevronLeft size={16} color="#fff" strokeWidth={2.5} />
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Back</Text>
+          </TouchableOpacity>
 
-      <Text style={{ fontSize: 26, fontWeight: 'bold', marginBottom: 4 }}>{pin.name}</Text>
-      <Text style={{ color: '#555', fontSize: 15, marginBottom: 12 }}>
-        {pin.organization?.name ?? 'Independent'}
-      </Text>
-
-      {pin.description && (
-        <Text style={{ color: '#333', marginBottom: 12 }}>{pin.description}</Text>
-      )}
-      {pin.edition_size && (
-        <Text style={{ color: '#555', marginBottom: 4 }}>Edition size: {pin.edition_size}</Text>
-      )}
-      {pin.released_at && (
-        <Text style={{ color: '#555', marginBottom: 16 }}>
-          Released: {new Date(pin.released_at).toLocaleDateString()}
-        </Text>
-      )}
-
-      {traders.length > 0 && (
-        <View style={{ marginBottom: 20 }}>
-          <Text style={{ fontWeight: '700', marginBottom: 8 }}>Open to trading ({traders.length})</Text>
-          {traders.map(t => (
-            <TouchableOpacity
-              key={t.user_id}
-              onPress={() => router.push(`/users/${t.user_id}`)}
-              style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f0f0f0' }}
-            >
-              <Text style={{ color: '#333' }}>@{t.profile.username} →</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <View style={{ borderTopWidth: 1, borderColor: '#e0e0e0', paddingTop: 16, marginTop: 8 }}>
-        {userPin ? (
-          <>
-            <Text style={{ fontWeight: '600', marginBottom: 8 }}>In your list</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {(Object.keys(FLAG_LABELS) as Flag[]).map(flag => {
-                const active = userPin[flag]
-                return (
-                  <TouchableOpacity
-                    key={flag}
-                    onPress={() => toggleFlag(flag)}
-                    style={{
-                      flex: 1, padding: 10, borderRadius: 8, alignItems: 'center',
-                      backgroundColor: active ? '#000' : '#eee',
-                    }}
-                  >
-                    <Text style={{ color: active ? '#fff' : '#333', fontSize: 13 }}>
-                      {FLAG_LABELS[flag]}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
+          {/* Unverified badge */}
+          {!pin.organization_id && (
+            <View style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: Radius.btn,
+            }}>
+              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: '#fff' }}>Unverified</Text>
             </View>
-          </>
+          )}
+
+          {/* Pin image centered */}
+          {pin.image_url ? (
+            <Image
+              source={{ uri: pin.image_url }}
+              style={{
+                position: 'absolute',
+                bottom: -30,
+                alignSelf: 'center',
+                width: 120,
+                height: 120,
+                borderRadius: 60,
+                borderWidth: 4,
+                borderColor: 'rgba(255,255,255,0.6)',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+              }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{
+              position: 'absolute',
+              bottom: -30,
+              alignSelf: 'center',
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              backgroundColor: 'rgba(255,255,255,0.25)',
+              borderWidth: 4,
+              borderColor: 'rgba(255,255,255,0.4)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 36, color: 'rgba(255,255,255,0.6)' }}>
+                {pin.name.charAt(0)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Content area */}
+        <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 44 }}>
+          {/* Org badge + pin name */}
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <OrgBadge name={orgName} logoUrl={pin.organization?.logo_url} size={20} />
+              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted }}>
+                {orgName}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack, textAlign: 'center' }}>
+              {pin.name}
+            </Text>
+          </View>
+
+          {/* Detail tabs */}
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: '#f0f0ee',
+            borderRadius: Radius.btn,
+            padding: 3,
+            marginBottom: 20,
+          }}>
+            {DETAIL_TABS.map(({ key, label }) => (
+              <TouchableOpacity
+                key={key}
+                onPress={() => setDetailTab(key)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  borderRadius: 11,
+                  alignItems: 'center',
+                  backgroundColor: detailTab === key ? '#fff' : 'transparent',
+                  shadowColor: detailTab === key ? '#000' : 'transparent',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                  elevation: detailTab === key ? 2 : 0,
+                }}
+              >
+                <Text style={{
+                  fontFamily: 'Monda_700Bold',
+                  fontSize: 13,
+                  color: detailTab === key ? Colors.deepBlack : Colors.dark.muted,
+                }}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Tab content */}
+          {detailTab === 'info' && (
+            <View style={{ gap: 12 }}>
+              {pin.description ? (
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack, lineHeight: 22 }}>
+                  {pin.description}
+                </Text>
+              ) : (
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                  No description available.
+                </Text>
+              )}
+              {pin.edition_size && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>Edition size</Text>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>{pin.edition_size}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {detailTab === 'details' && (
+            <View style={{ gap: 12 }}>
+              {pin.released_at && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>Released</Text>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
+                    {new Date(pin.released_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+              {!pin.released_at && (
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                  No details available.
+                </Text>
+              )}
+            </View>
+          )}
+
+          {detailTab === 'trade' && (
+            <View style={{ gap: 10 }}>
+              {traders.length === 0 ? (
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                  No one is currently looking to trade this pin.
+                </Text>
+              ) : (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <Users size={14} color={Colors.dark.muted} strokeWidth={2} />
+                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted }}>
+                      {traders.length} {traders.length === 1 ? 'person' : 'people'} want to trade this
+                    </Text>
+                  </View>
+                  {traders.map(t => (
+                    <TouchableOpacity
+                      key={t.user_id}
+                      onPress={() => router.push(`/users/${t.user_id}`)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#fff',
+                        borderRadius: Radius.btn,
+                        padding: 12,
+                        gap: 10,
+                      }}
+                    >
+                      <View style={{
+                        width: 32, height: 32, borderRadius: 16,
+                        backgroundColor: Colors.deepBlack,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>
+                          {t.profile.username.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
+                        @{t.profile.username}
+                      </Text>
+                      <ChevronLeft size={16} color={Colors.dark.muted} style={{ transform: [{ rotate: '180deg' }] }} />
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Action bar — fixed at bottom */}
+      <View style={{
+        position: 'absolute',
+        bottom: TAB_BAR_BOTTOM_OFFSET,
+        left: 0,
+        right: 0,
+        backgroundColor: Colors.offWhite,
+        borderTopWidth: 1,
+        borderTopColor: '#e8e8e6',
+        paddingHorizontal: Spacing.screenPad,
+        paddingVertical: 12,
+      }}>
+        {userPin ? (
+          <StatusChipRow
+            in_collection={userPin.in_collection}
+            wishlisted={userPin.wishlisted}
+            want_to_trade={userPin.want_to_trade}
+            onToggle={toggleFlag}
+          />
         ) : (
-          <>
-            <Text style={{ fontWeight: '600', marginBottom: 8 }}>Add to your list</Text>
-            <TouchableOpacity
-              onPress={addToCollection}
-              disabled={adding}
-              style={{ backgroundColor: '#000', padding: 12, borderRadius: 8, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#fff' }}>Add to collection</Text>
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity
+            onPress={addToCollection}
+            disabled={adding}
+            style={{
+              backgroundColor: Colors.deepBlack,
+              paddingVertical: 14,
+              borderRadius: Radius.btn,
+              alignItems: 'center',
+            }}
+          >
+            {adding
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}>Add to collection</Text>
+            }
+          </TouchableOpacity>
         )}
       </View>
-    </ScrollView>
+    </View>
   )
 }

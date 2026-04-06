@@ -1,53 +1,54 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import { Platform } from 'react-native';
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Pindex design tokens — mirrors tailwind.config.js
+// Use Tailwind classes where possible; use these constants only for
+// dynamic/computed styles (e.g. org colors from DB, interpolated values).
 
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
-};
+  red:      '#CD0808',
+  blue:     '#06A5DF',
+  green:    '#1EC209',
+  yellow:   '#E6CA0F',
+  purple:   '#6004BC',
+  offWhite: '#FFFFFA',
+  deepBlack:'#000E19',
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+  // Semantic aliases
+  flagHave:      '#1EC209', // in_collection
+  flagWishlist:  '#06A5DF', // wishlisted
+  flagTrade:     '#E6CA0F', // want_to_trade
+
+  orgFallback: '#6B7280', // gray-500 — used when org has no color set
+
+  dark: {
+    background: '#000E19',
+    surface:    '#0D1E2E',
+    text:       '#FFFFFA',
+    muted:      '#6B7280',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  light: {
+    background: '#FFFFFA',
+    surface:    '#FFFFFF',
+    text:       '#000E19',
+    muted:      '#6B7280',
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+} as const
+
+export const Radius = {
+  card: 20,
+  btn:  14,
+  chip: 8,
+} as const
+
+export const Spacing = {
+  cardPad:  12,
+  gridGap:  12,
+  screenPad: 16,
+} as const
+
+// Flag metadata — single source of truth for label + color per UserPin flag
+export const FLAGS = [
+  { key: 'in_collection' as const, label: 'Have',     color: Colors.flagHave },
+  { key: 'wishlisted'   as const, label: 'Wishlist',  color: Colors.flagWishlist },
+  { key: 'want_to_trade'as const, label: 'Trade',     color: Colors.flagTrade },
+] as const
+
+export type FlagKey = typeof FLAGS[number]['key']
