@@ -5,8 +5,12 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ChevronLeft, Camera } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import { pickAndUpload } from '@/lib/upload'
 import { useAuth } from '@/context/auth'
+import { OrgBadge } from '@/components/ui/org-badge'
+import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
 export default function OrgAdminScreen() {
@@ -22,6 +26,7 @@ export default function OrgAdminScreen() {
 
   const [orgName, setOrgName] = useState('')
   const [savingName, setSavingName] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const [transferUsername, setTransferUsername] = useState('')
   const [transferCandidate, setTransferCandidate] = useState<{ id: string; username: string } | null>(null)
@@ -46,6 +51,27 @@ export default function OrgAdminScreen() {
   useFocusEffect(useCallback(() => { load() }, [load]))
 
   const onRefresh = () => { setRefreshing(true); load() }
+
+  const handleLogoUpload = async () => {
+    if (!orgId) return
+    setUploadingLogo(true)
+    try {
+      const url = await pickAndUpload({
+        bucket: 'org-logos',
+        path: `${orgId}.jpg`,
+        width: 400,
+        quality: 0.85,
+      })
+      if (!url) return
+      const { error } = await supabase.from('organizations').update({ logo_url: url }).eq('id', orgId)
+      if (error) Alert.alert('Error', error.message)
+      else setOrg(prev => prev ? { ...prev, logo_url: url } : prev)
+    } catch (e: unknown) {
+      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Unknown error')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
 
   const saveName = async () => {
     const trimmed = orgName.trim()
@@ -106,75 +132,125 @@ export default function OrgAdminScreen() {
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
   }
 
   if (!org) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Organization not found.</Text></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><Text style={{ fontFamily: 'Monda_400Regular' }}>Organization not found.</Text></View>
   }
+
+  const nameChanged = orgName.trim() !== org.name
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24, paddingBottom: 48 }}
+      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
+      <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 }}>
+        <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Manage organization</Text>
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack, marginBottom: 24 }}>
+        Manage organization
+      </Text>
+
+      {/* Logo */}
+      <View style={{ alignItems: 'center', marginBottom: 28 }}>
+        <TouchableOpacity onPress={handleLogoUpload} disabled={uploadingLogo} activeOpacity={0.8}>
+          <View style={{ position: 'relative' }}>
+            <OrgBadge name={org.name} logoUrl={org.logo_url} size={72} />
+            <View style={{
+              position: 'absolute', bottom: 0, right: 0,
+              width: 24, height: 24, borderRadius: 12,
+              backgroundColor: Colors.deepBlack,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              {uploadingLogo
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Camera size={12} color="#fff" strokeWidth={2} />
+              }
+            </View>
+          </View>
+        </TouchableOpacity>
+        <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted, marginTop: 8 }}>
+          Tap to update logo
+        </Text>
+      </View>
 
       {/* Edit name */}
-      <Text style={{ fontWeight: '600', marginBottom: 6 }}>Organization name</Text>
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>
+        Organization name
+      </Text>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 32 }}>
         <TextInput
           value={orgName}
           onChangeText={setOrgName}
-          style={{ flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 }}
+          placeholderTextColor={Colors.dark.muted}
+          style={{
+            flex: 1,
+            fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
+            borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
+            padding: 12, backgroundColor: '#fff',
+          }}
         />
         <TouchableOpacity
           onPress={saveName}
-          disabled={savingName || orgName.trim() === org.name}
+          disabled={savingName || !nameChanged}
           style={{
-            backgroundColor: orgName.trim() === org.name ? '#ccc' : '#000',
-            borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center',
+            backgroundColor: nameChanged ? Colors.deepBlack : '#e0e0de',
+            borderRadius: Radius.btn, paddingHorizontal: 16, justifyContent: 'center',
           }}
         >
           {savingName
             ? <ActivityIndicator color="#fff" />
-            : <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>}
+            : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: nameChanged ? '#fff' : Colors.dark.muted }}>Save</Text>
+          }
         </TouchableOpacity>
       </View>
 
       {/* Pins */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 16, fontWeight: '700' }}>Pins ({pins.length})</Text>
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>
+          Pins ({pins.length})
+        </Text>
         <TouchableOpacity
           onPress={() => router.push({ pathname: '/admin/new-pin', params: { orgId, orgName: org.name } })}
-          style={{ backgroundColor: '#000', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }}
+          style={{
+            backgroundColor: Colors.deepBlack,
+            borderRadius: Radius.btn, paddingHorizontal: 14, paddingVertical: 8,
+          }}
         >
-          <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>+ Add pin</Text>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>+ Add pin</Text>
         </TouchableOpacity>
       </View>
 
       {pins.length === 0 ? (
-        <Text style={{ color: '#888', marginBottom: 32 }}>No pins yet.</Text>
+        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, marginBottom: 32 }}>No pins yet.</Text>
       ) : (
-        <View style={{ marginBottom: 32 }}>
+        <View style={{ marginBottom: 32, gap: 8 }}>
           {pins.map(pin => (
             <TouchableOpacity
               key={pin.id}
               onPress={() => router.push(`/(app)/explore/${pin.id}`)}
-              style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, marginBottom: 8 }}
+              style={{
+                backgroundColor: '#fff',
+                borderRadius: Radius.card,
+                padding: 14,
+              }}
             >
-              <Text style={{ fontWeight: '600', fontSize: 15 }}>{pin.name}</Text>
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
               {pin.description ? (
-                <Text style={{ color: '#888', fontSize: 13, marginTop: 4 }} numberOfLines={2}>{pin.description}</Text>
+                <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                  {pin.description}
+                </Text>
               ) : null}
               {pin.edition_size ? (
-                <Text style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Edition of {pin.edition_size}</Text>
+                <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 12, marginTop: 4 }}>
+                  Edition of {pin.edition_size}
+                </Text>
               ) : null}
             </TouchableOpacity>
           ))}
@@ -182,9 +258,11 @@ export default function OrgAdminScreen() {
       )}
 
       {/* Transfer admin */}
-      <View style={{ borderTopWidth: 1, borderTopColor: '#e0e0e0', paddingTop: 24 }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 4 }}>Transfer admin</Text>
-        <Text style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>
+      <View style={{ borderTopWidth: 1, borderTopColor: '#e8e8e6', paddingTop: 24 }}>
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, marginBottom: 4 }}>
+          Transfer admin
+        </Text>
+        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginBottom: 16 }}>
           Hand over admin of this organization to another Pindex user. You will lose access.
         </Text>
 
@@ -193,26 +271,37 @@ export default function OrgAdminScreen() {
             value={transferUsername}
             onChangeText={text => { setTransferUsername(text); setTransferCandidate(null) }}
             placeholder="Username"
+            placeholderTextColor={Colors.dark.muted}
             autoCapitalize="none"
-            style={{ flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 }}
+            style={{
+              flex: 1,
+              fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
+              borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
+              padding: 12, backgroundColor: '#fff',
+            }}
           />
           <TouchableOpacity
             onPress={findTransferUser}
             disabled={searching || !transferUsername.trim()}
             style={{
-              backgroundColor: !transferUsername.trim() ? '#ccc' : '#000',
-              borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center',
+              backgroundColor: transferUsername.trim() ? Colors.deepBlack : '#e0e0de',
+              borderRadius: Radius.btn, paddingHorizontal: 16, justifyContent: 'center',
             }}
           >
             {searching
               ? <ActivityIndicator color="#fff" />
-              : <Text style={{ color: '#fff', fontWeight: '600' }}>Find</Text>}
+              : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: transferUsername.trim() ? '#fff' : Colors.dark.muted }}>Find</Text>
+            }
           </TouchableOpacity>
         </View>
 
         {transferCandidate && (
-          <View style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-            <Text style={{ fontWeight: '600' }}>@{transferCandidate.username}</Text>
+          <View style={{
+            backgroundColor: '#fff', borderRadius: Radius.card, padding: 12, marginBottom: 12,
+          }}>
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
+              @{transferCandidate.username}
+            </Text>
           </View>
         )}
 
@@ -220,13 +309,20 @@ export default function OrgAdminScreen() {
           onPress={confirmTransfer}
           disabled={!transferCandidate || transferring}
           style={{
-            borderWidth: 1, borderColor: !transferCandidate ? '#ccc' : '#dc2626',
-            borderRadius: 8, padding: 14, alignItems: 'center',
+            borderWidth: 1,
+            borderColor: transferCandidate ? '#dc2626' : '#d0d0ce',
+            borderRadius: Radius.btn, padding: 14, alignItems: 'center',
           }}
         >
           {transferring
             ? <ActivityIndicator color="#dc2626" />
-            : <Text style={{ color: !transferCandidate ? '#ccc' : '#dc2626', fontWeight: '600' }}>Transfer admin</Text>}
+            : <Text style={{
+                fontFamily: 'Monda_700Bold', fontSize: 14,
+                color: transferCandidate ? '#dc2626' : Colors.dark.muted,
+              }}>
+                Transfer admin
+              </Text>
+          }
         </TouchableOpacity>
       </View>
     </ScrollView>

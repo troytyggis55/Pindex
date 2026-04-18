@@ -1,17 +1,22 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ChevronLeft, Camera } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
+import { pickAndUpload } from '@/lib/upload'
+import { OrgBadge } from '@/components/ui/org-badge'
+import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization } from '@/types'
 
 export default function ProfileScreen() {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, refreshProfile } = useAuth()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [adminOrgs, setAdminOrgs] = useState<Organization[]>([])
   const [loadingOrgs, setLoadingOrgs] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useFocusEffect(useCallback(() => {
     if (!profile) return
@@ -26,6 +31,30 @@ export default function ProfileScreen() {
         setLoadingOrgs(false)
       })
   }, [profile]))
+
+  const handleAvatarUpload = async () => {
+    if (!profile) return
+    setUploadingAvatar(true)
+    try {
+      const url = await pickAndUpload({
+        bucket: 'profile-images',
+        path: `${profile.id}.jpg`,
+        width: 400,
+        quality: 0.85,
+      })
+      if (!url) return
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', profile.id)
+      if (error) Alert.alert('Error', error.message)
+      else await refreshProfile()
+    } catch (e: unknown) {
+      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Unknown error')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const handleSignOut = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
@@ -45,63 +74,122 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.rpc('delete_own_account')
-            if (error) {
-              Alert.alert('Error', error.message)
-            } else {
-              await signOut()
-            }
+            if (error) Alert.alert('Error', error.message)
+            else await signOut()
           },
         },
       ]
     )
   }
 
+  const username = profile?.username ?? '?'
+  const initial = username.charAt(0).toUpperCase()
+
   return (
-    <View style={{ flex: 1, padding: 24, paddingTop: insets.top + 24 }}>
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 24 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: Colors.offWhite, paddingTop: insets.top }}>
+      {/* Header */}
+      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <ChevronLeft size={24} color={Colors.deepBlack} strokeWidth={2} />
+        </TouchableOpacity>
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 22, color: Colors.deepBlack }}>Profile</Text>
+      </View>
 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>Profile</Text>
-      <Text style={{ fontSize: 17, color: '#333', marginBottom: 32 }}>@{profile?.username}</Text>
-
-      {loadingOrgs ? (
-        <ActivityIndicator style={{ marginBottom: 32 }} />
-      ) : adminOrgs.length > 0 ? (
-        <View style={{ marginBottom: 32 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 12 }}>
-            My organizations
-          </Text>
-          {adminOrgs.map(org => (
-            <TouchableOpacity
-              key={org.id}
-              onPress={() => router.push(`/admin/${org.id}`)}
-              style={{
-                borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8,
-                padding: 14, marginBottom: 8, flexDirection: 'row',
-                justifyContent: 'space-between', alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontWeight: '600', fontSize: 15 }}>{org.name}</Text>
-              <Text style={{ color: '#888' }}>›</Text>
-            </TouchableOpacity>
-          ))}
+      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 24, gap: 24 }}>
+        {/* Avatar */}
+        <View style={{ alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={handleAvatarUpload} disabled={uploadingAvatar} activeOpacity={0.8}>
+            <View style={{ position: 'relative' }}>
+              {profile?.avatar_url ? (
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={{ width: 80, height: 80, borderRadius: 40 }}
+                />
+              ) : (
+                <View style={{
+                  width: 80, height: 80, borderRadius: 40,
+                  backgroundColor: Colors.deepBlack,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 32, color: '#fff' }}>{initial}</Text>
+                </View>
+              )}
+              <View style={{
+                position: 'absolute', bottom: 0, right: 0,
+                width: 26, height: 26, borderRadius: 13,
+                backgroundColor: Colors.offWhite,
+                borderWidth: 1.5, borderColor: '#e0e0de',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                {uploadingAvatar
+                  ? <ActivityIndicator size="small" color={Colors.deepBlack} />
+                  : <Camera size={13} color={Colors.deepBlack} strokeWidth={2} />
+                }
+              </View>
+            </View>
+          </TouchableOpacity>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 18, color: Colors.deepBlack }}>@{username}</Text>
         </View>
-      ) : null}
 
-      <TouchableOpacity
-        onPress={handleSignOut}
-        style={{ borderWidth: 1, borderColor: '#dc2626', borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 }}
-      >
-        <Text style={{ color: '#dc2626', fontWeight: '600' }}>Log out</Text>
-      </TouchableOpacity>
+        {/* Admin orgs */}
+        {loadingOrgs ? (
+          <ActivityIndicator />
+        ) : adminOrgs.length > 0 ? (
+          <View style={{ gap: 8 }}>
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted, letterSpacing: 0.5 }}>
+              MY ORGANIZATIONS
+            </Text>
+            {adminOrgs.map(org => (
+              <TouchableOpacity
+                key={org.id}
+                onPress={() => router.push(`/admin/${org.id}`)}
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: Radius.card,
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <OrgBadge name={org.name} logoUrl={org.logo_url} size={36} />
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+                  {org.name}
+                </Text>
+                <ChevronLeft size={16} color={Colors.dark.muted} style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
 
-      <TouchableOpacity
-        onPress={handleDeleteAccount}
-        style={{ borderRadius: 8, padding: 14, alignItems: 'center', backgroundColor: '#dc2626' }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '600' }}>Delete account</Text>
-      </TouchableOpacity>
+        {/* Actions */}
+        <View style={{ gap: 10, marginTop: 8 }}>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            style={{
+              borderWidth: 1,
+              borderColor: '#d0d0ce',
+              borderRadius: Radius.btn,
+              padding: 14,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.dark.muted }}>Log out</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleDeleteAccount}
+            style={{
+              borderRadius: Radius.btn,
+              padding: 14,
+              alignItems: 'center',
+              backgroundColor: '#fee2e2',
+            }}
+          >
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#dc2626' }}>Delete account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   )
 }
