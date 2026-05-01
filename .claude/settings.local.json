@@ -10,7 +10,11 @@
       "Bash(iconv:*)",
       "Bash(npx expo:*)",
       "Bash(npx tsc:*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/expo-image-picker/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/expo-file-system/package.json'\\).version\\)\")",
+      "Bash(node -e \"const ip = require\\('./node_modules/expo-image-picker/build/ImagePicker'\\); console.log\\(Object.keys\\(ip\\)\\)\")",
+      "Bash(xargs grep *)"
     ]
   }
 }

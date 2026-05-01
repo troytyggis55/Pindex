@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker'
 import * as ImageManipulator from 'expo-image-manipulator'
-import * as FileSystem from 'expo-file-system'
+import { File } from 'expo-file-system'
 import { decode } from 'base64-arraybuffer'
 import { supabase } from '@/lib/supabase'
 
@@ -16,7 +16,7 @@ type UploadConfig = {
 /** Pick an image from the library and return the local URI, or null if cancelled. */
 export async function pickImageUri(aspect: [number, number] = [1, 1]): Promise<string | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: 'images',
     allowsEditing: true,
     aspect,
     quality: 1,
@@ -36,9 +36,7 @@ export async function uploadImageUri(uri: string, config: UploadConfig): Promise
     { compress: config.quality ?? 0.8, format: ImageManipulator.SaveFormat.JPEG }
   )
 
-  const base64 = await FileSystem.readAsStringAsync(manipulated.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  })
+  const base64 = await new File(manipulated.uri).base64()
 
   const { error } = await supabase.storage
     .from(config.bucket)
