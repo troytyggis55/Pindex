@@ -1,21 +1,98 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import { ChevronLeft, Camera } from 'lucide-react-native'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
+import { ChevronLeft, Camera, Building2, X } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/auth'
 import { pickImageUri, uploadImageUri } from '@/lib/upload'
 import { Colors, Radius, Spacing } from '@/constants/theme'
+
+type OrgResult = { id: string; name: string }
 
 export default function NewPinScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { session } = useAuth()
+
+  // Params: orgId+orgName for pre-filled org (from org admin flow)
+  //         pinId for edit mode
+  const {
+    orgId: orgIdParam,
+    orgName: orgNameParam,
+    pinId: editPinId,
+  } = useLocalSearchParams<{ orgId?: string; orgName?: string; pinId?: string }>()
+
+  const isEditMode = !!editPinId
+
+  const [loadingPin, setLoadingPin] = useState(isEditMode)
+  const [submitting, setSubmitting] = useState(false)
+
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [editionSize, setEditionSize] = useState('')
   const [releasedAt, setReleasedAt] = useState('')
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
   const [imageUri, setImageUri] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+
+  // Org assignment (create mode only)
+  const [orgQuery, setOrgQuery] = useState('')
+  const [orgResults, setOrgResults] = useState<OrgResult[]>([])
+  const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(
+    orgIdParam && orgNameParam ? { id: orgIdParam, name: orgNameParam } : null
+  )
+  const [orgNotOnPindex, setOrgNotOnPindex] = useState(false)
+
+  const isOrgPrefilled = !!orgIdParam
+
+  // Load existing pin in edit mode
+  const loadPin = useCallback(async () => {
+    if (!editPinId || !session?.user) return
+    const { data, error } = await supabase
+      .from('pins')
+      .select('id, name, description, edition_size, released_at, image_url, created_by, org_claimed_at')
+      .eq('id', editPinId)
+      .single()
+
+    if (error || !data) {
+      Alert.alert('Error', 'Pin not found.')
+      router.back()
+      return
+    }
+    if (data.created_by !== session.user.id || data.org_claimed_at !== null) {
+      Alert.alert('Not editable', 'This pin has been claimed by an organization and can no longer be edited.')
+      router.back()
+      return
+    }
+
+    setName(data.name)
+    setDescription(data.description ?? '')
+    setEditionSize(data.edition_size ? String(data.edition_size) : '')
+    setReleasedAt(data.released_at ? data.released_at.slice(0, 10) : '')
+    setExistingImageUrl(data.image_url)
+    setLoadingPin(false)
+  }, [editPinId, session?.user.id])
+
+  useFocusEffect(useCallback(() => {
+    if (isEditMode) loadPin()
+  }, [isEditMode, loadPin]))
+
+  // Debounced org search (create mode only, no org selected yet)
+  useEffect(() => {
+    if (isEditMode || isOrgPrefilled || selectedOrg || !orgQuery.trim()) {
+      setOrgResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .ilike('name', `%${orgQuery.trim()}%`)
+        .limit(6)
+      setOrgResults(data ?? [])
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [orgQuery, isEditMode, isOrgPrefilled, selectedOrg])
 
   const pickImage = async () => {
     try {
@@ -28,6 +105,7 @@ export default function NewPinScreen() {
 
   const submit = async () => {
     if (!name.trim()) { Alert.alert('Missing name', 'A pin must have a name.'); return }
+    if (!session?.user) { Alert.alert('Error', 'Not signed in.'); return }
     setSubmitting(true)
 
     const n = editionSize.trim() ? parseInt(editionSize, 10) : null
@@ -37,36 +115,75 @@ export default function NewPinScreen() {
       return
     }
 
-    const { data, error } = await supabase.from('pins').insert({
-      name: name.trim(),
-      organization_id: null,
-      description: description.trim() || null,
-      edition_size: n,
-      released_at: releasedAt.trim() || null,
-    }).select('id').single()
-
-    if (error || !data) {
-      Alert.alert('Error', error?.message ?? 'Could not create pin')
-      setSubmitting(false)
-      return
-    }
-
-    if (imageUri) {
-      try {
-        const url = await uploadImageUri(imageUri, {
-          bucket: 'pin-images',
-          path: `${data.id}.jpg`,
-          width: 400,
-          quality: 0.8,
-        })
-        await supabase.from('pins').update({ image_url: url }).eq('id', data.id)
-      } catch {
-        // Image upload failing should not block pin creation
+    if (isEditMode) {
+      // Update existing pin
+      const updates: Record<string, unknown> = {
+        name: name.trim(),
+        description: description.trim() || null,
+        edition_size: n,
+        released_at: releasedAt.trim() || null,
       }
-    }
+      if (imageUri) {
+        try {
+          const url = await uploadImageUri(imageUri, {
+            bucket: 'pin-images',
+            path: `${editPinId}.jpg`,
+            width: 400,
+            quality: 0.8,
+          })
+          updates.image_url = url
+        } catch {
+          // non-blocking
+        }
+      }
+      const { error } = await supabase.from('pins').update(updates).eq('id', editPinId)
+      setSubmitting(false)
+      if (error) { Alert.alert('Error', error.message); return }
+      router.back()
+    } else {
+      // Create new pin
+      const { data, error } = await supabase.from('pins').insert({
+        name: name.trim(),
+        organization_id: selectedOrg?.id ?? null,
+        created_by: session.user.id,
+        description: description.trim() || null,
+        edition_size: n,
+        released_at: releasedAt.trim() || null,
+      }).select('id').single()
 
-    router.replace(`/(app)/explore/${data.id}`)
+      if (error || !data) {
+        Alert.alert('Error', error?.message ?? 'Could not create pin')
+        setSubmitting(false)
+        return
+      }
+
+      if (imageUri) {
+        try {
+          const url = await uploadImageUri(imageUri, {
+            bucket: 'pin-images',
+            path: `${data.id}.jpg`,
+            width: 400,
+            quality: 0.8,
+          })
+          await supabase.from('pins').update({ image_url: url }).eq('id', data.id)
+        } catch {
+          // non-blocking
+        }
+      }
+
+      router.replace(`/(app)/explore/${data.id}`)
+    }
   }
+
+  if (loadingPin) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}>
+        <ActivityIndicator />
+      </View>
+    )
+  }
+
+  const displayImage = imageUri ?? existingImageUrl
 
   return (
     <ScrollView
@@ -79,7 +196,9 @@ export default function NewPinScreen() {
         <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack, marginBottom: 24 }}>New Pin</Text>
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack, marginBottom: 24 }}>
+        {isEditMode ? 'Edit Pin' : 'New Pin'}
+      </Text>
 
       {/* Image picker */}
       <TouchableOpacity
@@ -87,8 +206,8 @@ export default function NewPinScreen() {
         activeOpacity={0.8}
         style={{ alignSelf: 'center', marginBottom: 28, position: 'relative' }}
       >
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+        {displayImage ? (
+          <Image source={{ uri: displayImage }} style={{ width: 100, height: 100, borderRadius: 50 }} />
         ) : (
           <View style={{
             width: 100, height: 100, borderRadius: 50,
@@ -115,7 +234,7 @@ export default function NewPinScreen() {
         onChangeText={setName}
         placeholder="Pin name"
         placeholderTextColor={Colors.dark.muted}
-        autoFocus
+        autoFocus={!isEditMode}
         style={{
           fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
           borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
@@ -161,9 +280,107 @@ export default function NewPinScreen() {
         style={{
           fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
           borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
-          padding: 12, marginBottom: 28, backgroundColor: '#fff',
+          padding: 12, marginBottom: isEditMode ? 28 : 24, backgroundColor: '#fff',
         }}
       />
+
+      {/* Organization (create mode only) */}
+      {!isEditMode && (
+        <>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>Organization</Text>
+
+          {isOrgPrefilled ? (
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: '#f0f0ee', borderRadius: Radius.btn,
+              borderWidth: 1, borderColor: '#d0d0ce',
+              padding: 12, marginBottom: 28,
+            }}>
+              <Building2 size={16} color={Colors.dark.muted} strokeWidth={2} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
+                {selectedOrg?.name}
+              </Text>
+            </View>
+          ) : selectedOrg ? (
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: '#fff', borderRadius: Radius.btn,
+              borderWidth: 1.5, borderColor: Colors.blue,
+              padding: 12, marginBottom: 28,
+            }}>
+              <Building2 size={16} color={Colors.blue} strokeWidth={2} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
+                {selectedOrg.name}
+              </Text>
+              <TouchableOpacity onPress={() => { setSelectedOrg(null); setOrgQuery('') }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <X size={16} color={Colors.dark.muted} strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ marginBottom: 28 }}>
+              <TextInput
+                value={orgQuery}
+                onChangeText={text => { setOrgQuery(text); if (orgNotOnPindex) setOrgNotOnPindex(false) }}
+                placeholder="Search organizations…"
+                placeholderTextColor={Colors.dark.muted}
+                editable={!orgNotOnPindex}
+                style={{
+                  fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
+                  borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
+                  padding: 12, marginBottom: 8,
+                  backgroundColor: orgNotOnPindex ? '#f0f0ee' : '#fff',
+                }}
+              />
+
+              {!orgNotOnPindex && orgResults.length > 0 && (
+                <View style={{
+                  backgroundColor: '#fff', borderRadius: Radius.card,
+                  borderWidth: 1, borderColor: '#e8e8e6',
+                  marginBottom: 10, overflow: 'hidden',
+                }}>
+                  {orgResults.map((org, i) => (
+                    <TouchableOpacity
+                      key={org.id}
+                      onPress={() => { setSelectedOrg(org); setOrgQuery(''); setOrgResults([]) }}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: i < orgResults.length - 1 ? 1 : 0,
+                        borderBottomColor: '#f0f0ee',
+                      }}
+                    >
+                      <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack }}>{org.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={() => {
+                  const next = !orgNotOnPindex
+                  setOrgNotOnPindex(next)
+                  if (next) { setOrgQuery(''); setOrgResults([]) }
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}
+              >
+                <View style={{
+                  width: 18, height: 18, borderRadius: 4,
+                  borderWidth: 1.5,
+                  borderColor: orgNotOnPindex ? Colors.deepBlack : '#d0d0ce',
+                  backgroundColor: orgNotOnPindex ? Colors.deepBlack : 'transparent',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {orgNotOnPindex && (
+                    <Text style={{ color: '#fff', fontSize: 11, lineHeight: 14 }}>✓</Text>
+                  )}
+                </View>
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted }}>
+                  My org is not on Pindex
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
+      )}
 
       <TouchableOpacity
         onPress={submit}
@@ -172,7 +389,9 @@ export default function NewPinScreen() {
       >
         {submitting
           ? <ActivityIndicator color="#fff" />
-          : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}>Create pin</Text>
+          : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}>
+              {isEditMode ? 'Save changes' : 'Create pin'}
+            </Text>
         }
       </TouchableOpacity>
     </ScrollView>

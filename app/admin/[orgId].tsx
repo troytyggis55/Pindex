@@ -13,6 +13,14 @@ import { OrgBadge } from '@/components/ui/org-badge'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
+type PendingClaim = {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+  creator: { username: string } | null
+}
+
 export default function OrgAdminScreen() {
   const { orgId } = useLocalSearchParams<{ orgId: string }>()
   const router = useRouter()
@@ -21,8 +29,10 @@ export default function OrgAdminScreen() {
 
   const [org, setOrg] = useState<Organization | null>(null)
   const [pins, setPins] = useState<Pin[]>([])
+  const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [claiming, setClaiming] = useState<string | null>(null)
 
   const [orgName, setOrgName] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -35,15 +45,29 @@ export default function OrgAdminScreen() {
 
   const load = useCallback(async () => {
     if (!orgId) return
-    const [orgRes, pinsRes] = await Promise.all([
+    const [orgRes, pinsRes, claimsRes] = await Promise.all([
       supabase.from('organizations').select('*').eq('id', orgId).single(),
-      supabase.from('pins').select('*').eq('organization_id', orgId).order('created_at', { ascending: false }),
+      // Only show pins that have been claimed by this org
+      supabase
+        .from('pins')
+        .select('*')
+        .eq('organization_id', orgId)
+        .not('org_claimed_at', 'is', null)
+        .order('created_at', { ascending: false }),
+      // Pins assigned to this org but not yet claimed
+      supabase
+        .from('pins')
+        .select('id, name, description, created_at, creator:profiles!created_by(username)')
+        .eq('organization_id', orgId)
+        .is('org_claimed_at', null)
+        .order('created_at', { ascending: false }),
     ])
     if (orgRes.data) {
       setOrg(orgRes.data)
       setOrgName(orgRes.data.name)
     }
     if (pinsRes.data) setPins(pinsRes.data)
+    if (claimsRes.data) setPendingClaims(claimsRes.data as PendingClaim[])
     setLoading(false)
     setRefreshing(false)
   }, [orgId])
@@ -82,6 +106,18 @@ export default function OrgAdminScreen() {
     setSavingName(false)
     if (error) { Alert.alert('Error', error.message); return }
     setOrg(prev => prev ? { ...prev, name: trimmed } : prev)
+  }
+
+  const claimPin = async (pinId: string) => {
+    setClaiming(pinId)
+    const { error } = await supabase.rpc('claim_pin_for_org', { p_pin_id: pinId })
+    setClaiming(null)
+    if (error) {
+      Alert.alert('Error', error.message)
+      return
+    }
+    // Refresh to move pin from pending → claimed list
+    load()
   }
 
   const findTransferUser = async () => {
@@ -211,13 +247,78 @@ export default function OrgAdminScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Pins */}
+      {/* Pending Claims */}
+      {pendingClaims.length > 0 && (
+        <View style={{ marginBottom: 32 }}>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
+          }}>
+            <View style={{
+              width: 8, height: 8, borderRadius: 4,
+              backgroundColor: Colors.yellow,
+            }} />
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>
+              Pending Claims ({pendingClaims.length})
+            </Text>
+          </View>
+          <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted, marginBottom: 12 }}>
+            These pins were created by users and assigned to your organization. Claim them to take ownership.
+          </Text>
+          <View style={{ gap: 8 }}>
+            {pendingClaims.map(pin => (
+              <View
+                key={pin.id}
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: Radius.card,
+                  padding: 14,
+                  borderWidth: 1.5,
+                  borderColor: '#f0e090',
+                }}
+              >
+                <TouchableOpacity onPress={() => router.push(`/(app)/explore/${pin.id}`)}>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
+                  {pin.description ? (
+                    <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                      {pin.description}
+                    </Text>
+                  ) : null}
+                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: Colors.dark.muted, marginTop: 6 }}>
+                    {pin.creator ? `Added by @${pin.creator.username}` : 'Added by a user'} · {new Date(pin.created_at).toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => claimPin(pin.id)}
+                  disabled={claiming === pin.id}
+                  style={{
+                    marginTop: 12,
+                    backgroundColor: Colors.deepBlack,
+                    borderRadius: Radius.btn,
+                    paddingVertical: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  {claiming === pin.id
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Claim this pin</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Claimed Pins */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>
           Pins ({pins.length})
         </Text>
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/admin/new-pin', params: { orgId, orgName: org.name } })}
+          onPress={() => router.push({
+            pathname: '/(app)/explore/new',
+            params: { orgId, orgName: org.name },
+          })}
           style={{
             backgroundColor: Colors.deepBlack,
             borderRadius: Radius.btn, paddingHorizontal: 14, paddingVertical: 8,

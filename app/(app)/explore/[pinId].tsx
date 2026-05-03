@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl, Image } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
-import { ChevronLeft, Users } from 'lucide-react-native'
+import { ChevronLeft, Users, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
@@ -95,6 +95,7 @@ export default function PinDetailScreen() {
 
   const orgColor = Colors.orgFallback // future: pin.organization?.color
   const orgName = pin.organization?.name ?? 'Independent'
+  const canEdit = pin.created_by === session?.user.id && pin.org_claimed_at === null
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
@@ -126,8 +127,27 @@ export default function PinDetailScreen() {
             <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Back</Text>
           </TouchableOpacity>
 
-          {/* Unverified badge */}
-          {!pin.organization_id && (
+          {/* Top-right: edit button (for owner) or unverified badge */}
+          {canEdit ? (
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/(app)/explore/new', params: { pinId } })}
+              style={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                backgroundColor: 'rgba(0,0,0,0.3)',
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: Radius.btn,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+              }}
+            >
+              <Pencil size={12} color="#fff" strokeWidth={2.5} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: '#fff' }}>Edit</Text>
+            </TouchableOpacity>
+          ) : !pin.organization_id ? (
             <View style={{
               position: 'absolute',
               top: 16,
@@ -139,7 +159,7 @@ export default function PinDetailScreen() {
             }}>
               <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: '#fff' }}>Unverified</Text>
             </View>
-          )}
+          ) : null}
 
           {/* Pin image centered */}
           {pin.image_url ? (

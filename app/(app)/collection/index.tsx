@@ -1,14 +1,14 @@
 import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus, ChevronRight } from 'lucide-react-native'
+import { Plus, ChevronRight, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { UserPin, Pin, Trade, TradeItem, Organization } from '@/types'
 
-type Tab = 'pins' | 'trades' | 'following'
+type Tab = 'pins' | 'trades' | 'following' | 'created'
 type CollectionItem = UserPin & { pin: Pin & { organization: Organization | null } }
 type Profile = { id: string; username: string }
 type ContactRow = { id: string; name: string }
@@ -19,11 +19,20 @@ type TradeWithDetails = Trade & {
   trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
 }
 type FollowingUser = { following_id: string; profile: Profile }
+type CreatedPin = {
+  id: string
+  name: string
+  image_url: string | null
+  organization_id: string | null
+  org_claimed_at: string | null
+  organization: { name: string } | null
+}
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pins', label: 'My Pins' },
   { key: 'trades', label: 'My Trades' },
   { key: 'following', label: 'Following' },
+  { key: 'created', label: 'Created' },
 ]
 
 const TAB_BAR_BOTTOM_OFFSET = 84
@@ -35,13 +44,14 @@ export default function PersonalScreen() {
   const [pins, setPins] = useState<CollectionItem[]>([])
   const [trades, setTrades] = useState<TradeWithDetails[]>([])
   const [following, setFollowing] = useState<FollowingUser[]>([])
+  const [createdPins, setCreatedPins] = useState<CreatedPin[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(async () => {
     if (!session?.user) return
     const myId = session.user.id
-    const [pinsRes, tradesRes, followingRes] = await Promise.all([
+    const [pinsRes, tradesRes, followingRes, createdRes] = await Promise.all([
       supabase
         .from('user_pins')
         .select('*, pin:pins(*, organization:organizations(*))')
@@ -62,10 +72,16 @@ export default function PersonalScreen() {
         .from('follows')
         .select('following_id, profile:profiles!following_id(id, username)')
         .eq('follower_id', myId),
+      supabase
+        .from('pins')
+        .select('id, name, image_url, organization_id, org_claimed_at, organization:organizations(name)')
+        .eq('created_by', myId)
+        .order('created_at', { ascending: false }),
     ])
     if (pinsRes.data) setPins(pinsRes.data as CollectionItem[])
     if (tradesRes.data) setTrades(tradesRes.data as TradeWithDetails[])
     if (followingRes.data) setFollowing(followingRes.data as FollowingUser[])
+    if (createdRes.data) setCreatedPins(createdRes.data as CreatedPin[])
     setLoading(false)
     setRefreshing(false)
   }, [session?.user.id])
@@ -121,7 +137,7 @@ export default function PersonalScreen() {
         </View>
 
         {/* Tab chips */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
           {TABS.map(({ key, label }) => (
             <TouchableOpacity
               key={key}
@@ -138,7 +154,7 @@ export default function PersonalScreen() {
             >
               <Text style={{
                 fontFamily: 'Monda_700Bold',
-                fontSize: 12,
+                fontSize: 11,
                 color: tab === key ? '#fff' : Colors.dark.muted,
               }}>
                 {label}
@@ -350,6 +366,71 @@ export default function PersonalScreen() {
               </TouchableOpacity>
             </View>
           )}
+        />
+      )}
+
+      {/* Created */}
+      {tab === 'created' && (
+        <FlatList
+          data={createdPins}
+          keyExtractor={p => p.id}
+          refreshControl={refreshControl}
+          contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
+          ListEmptyComponent={
+            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+              You haven't created any pins yet.
+            </Text>
+          }
+          renderItem={({ item }) => {
+            const isClaimed = item.org_claimed_at !== null
+            const orgLabel = item.organization?.name ?? 'Independent'
+            return (
+              <TouchableOpacity
+                onPress={() => {
+                  if (!isClaimed) {
+                    router.push({ pathname: '/(app)/explore/new', params: { pinId: item.id } })
+                  } else {
+                    router.push(`/(app)/explore/${item.id}`)
+                  }
+                }}
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: Radius.card,
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{item.name}</Text>
+                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted, marginTop: 2 }}>
+                    {orgLabel}
+                  </Text>
+                </View>
+                {/* Status badge */}
+                <View style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: Radius.chip,
+                  backgroundColor: isClaimed ? '#dcfce7' : '#fef3c7',
+                }}>
+                  <Text style={{
+                    fontFamily: 'Monda_700Bold',
+                    fontSize: 11,
+                    color: isClaimed ? '#166534' : '#92400e',
+                  }}>
+                    {isClaimed ? `Claimed` : 'Unclaimed'}
+                  </Text>
+                </View>
+                {/* Edit icon for unclaimed, chevron for claimed */}
+                {isClaimed
+                  ? <ChevronRight size={16} color={Colors.dark.muted} strokeWidth={2} />
+                  : <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
+                }
+              </TouchableOpacity>
+            )
+          }}
         />
       )}
     </View>

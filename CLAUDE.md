@@ -12,6 +12,7 @@ Organizations create and distribute physical pins. Users collect them, track the
 1. User signs up and gets a profile
 2. User browses/searches pins and adds them to their collection
 3. On any pin, the user can independently toggle: in collection, wishlisted, and want to trade (these are not mutually exclusive)
+4. If a pin doesn't exist yet, any user can create it — optionally assigning it to an existing org or marking "org not on Pindex". The creating user administers the pin until an org admin claims it (see Pin domain concept below).
 
 ### Recording a trade
 1. User traded pins with someone IRL and wants to log it
@@ -37,7 +38,7 @@ When a new user signs up, a name-match check runs against all existing users' co
 
 - **Profile** — app user, linked to `auth.users`. Has a role: `user`, `org_admin`, or `superadmin`
 - **Organization** — a club or association that issues pins (e.g. a student organization). Has one admin user
-- **Pin** — a collectible physical pin, issued by an organization
+- **Pin** — a collectible physical pin. Any authenticated user can create one. `created_by` points to the creating user (nullable for pre-migration rows). `organization_id` is the assigned or owning org (nullable). `org_claimed_at` is a timestamp: `null` while the `created_by` user administers the pin, non-null once an org admin has claimed it. After a claim, only the org admin can edit; before a claim, only `created_by` can edit.
 - **UserPin** — represents a user's relationship to a pin. Has three independent boolean flags: `in_collection`, `wishlisted`, `want_to_trade` (all can be true at the same time)
 - **Trade** — a recorded real-life exchange between two parties. Created by one user; the other party (if on Pindex) can confirm it. Status: `unconfirmed` → `confirmed`
 - **TradeItem** — a single pin within a trade, tagged as `gave` or `received` from the creating user's perspective

@@ -228,7 +228,7 @@ export default function NewTradeScreen() {
   }
 
   const createAndAddPin = async (name: string, side: 'gave' | 'received') => {
-    const { data, error } = await supabase.from('pins').insert({ name }).select('id, name').single()
+    const { data, error } = await supabase.from('pins').insert({ name, created_by: session!.user.id }).select('id, name').single()
     if (error || !data) { Alert.alert('Error', error?.message ?? 'Could not create pin'); return }
     addPin(data, side)
   }
