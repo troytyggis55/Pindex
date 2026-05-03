@@ -97,7 +97,9 @@ export default function PinDetailScreen() {
 
   const orgColor = Colors.orgFallback // future: pin.organization?.color
   const orgName = pin.organization?.name ?? 'Independent'
-  const canEdit = pin.created_by === session?.user.id && pin.org_claimed_at === null
+  const canEdit =
+    (pin.created_by === session?.user.id && pin.org_claimed_at === null) ||
+    (pin.org_claimed_at !== null && pin.organization?.admin_user_id === session?.user.id)
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>

@@ -50,7 +50,7 @@ export default function NewPinScreen() {
     if (!editPinId || !session?.user) return
     const { data, error } = await supabase
       .from('pins')
-      .select('id, name, description, edition_size, released_at, image_url, created_by, org_claimed_at')
+      .select('id, name, description, edition_size, released_at, image_url, created_by, org_claimed_at, organization:organizations(admin_user_id)')
       .eq('id', editPinId)
       .single()
 
@@ -59,8 +59,10 @@ export default function NewPinScreen() {
       router.back()
       return
     }
-    if (data.created_by !== session.user.id || data.org_claimed_at !== null) {
-      Alert.alert('Not editable', 'This pin has been claimed by an organization and can no longer be edited.')
+    const isCreatorUnclaimed = data.created_by === session.user.id && data.org_claimed_at === null
+    const isOrgAdmin = data.org_claimed_at !== null && (data.organization as { admin_user_id: string | null } | null)?.admin_user_id === session.user.id
+    if (!isCreatorUnclaimed && !isOrgAdmin) {
+      Alert.alert('Not editable', 'You do not have permission to edit this pin.')
       router.back()
       return
     }
