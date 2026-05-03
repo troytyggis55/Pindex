@@ -1,41 +1,273 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, FlatList } from 'react-native'
+import {
+  View, Text, TextInput, TouchableOpacity, Alert,
+  ActivityIndicator, ScrollView, Modal, KeyboardAvoidingView, Platform,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { ChevronLeft, X, Search, Plus } from 'lucide-react-native'
+import { X, Search, Plus, ArrowLeftRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { Colors, Radius, Spacing } from '@/constants/theme'
-import type { Pin } from '@/types'
+import { PinCard } from '@/components/ui/pin-card'
 
-type PinOption = Pick<Pin, 'id' | 'name'>
+type TradePinOption = {
+  id: string
+  name: string
+  image_url: string | null
+  organization_id: string | null
+  organization: { id: string; name: string; color: string | null } | null
+}
+
 type Partner =
   | { type: 'profile'; id: string; name: string }
   | { type: 'contact'; name: string }
+
 type ProfileResult = { id: string; username: string }
 
-// ── Pin chip (selected pin in a half) ─────────────────────────────────────────
-function PinChip({ name, onRemove }: { name: string; onRemove: () => void }) {
+const BALL_SIZE = 64
+const PIN_CIRCLE = 76
+
+// ── Partner selection modal ───────────────────────────────────────────────────
+function PartnerModal({
+  visible,
+  userId,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean
+  userId: string
+  onSelect: (p: Partner) => void
+  onClose: () => void
+}) {
+  const insets = useSafeAreaInsets()
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ProfileResult[]>([])
+
+  useEffect(() => {
+    if (!visible) { setQuery(''); setResults([]) }
+  }, [visible])
+
+  useEffect(() => {
+    if (query.length < 2) { setResults([]); return }
+    const timer = setTimeout(() => {
+      supabase
+        .from('profiles')
+        .select('id, username')
+        .ilike('username', `%${query}%`)
+        .neq('id', userId)
+        .limit(8)
+        .then(({ data }) => setResults(data ?? []))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const handle = (p: Partner) => { onSelect(p); onClose() }
+
   return (
-    <View style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      borderRadius: Radius.btn,
-      paddingLeft: 12,
-      paddingRight: 6,
-      paddingVertical: 6,
-      gap: 6,
-    }}>
-      <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: '#fff', flex: 1 }}>{name}</Text>
-      <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <X size={14} color="rgba(255,255,255,0.7)" strokeWidth={2.5} />
-      </TouchableOpacity>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+          <View style={{
+            backgroundColor: Colors.offWhite,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            padding: Spacing.screenPad,
+            paddingBottom: insets.bottom + 24,
+            minHeight: 340,
+          }}>
+            {/* Drag handle */}
+            <View style={{
+              width: 36, height: 4, borderRadius: 2,
+              backgroundColor: '#d0d0ce',
+              alignSelf: 'center',
+              marginBottom: 20,
+            }} />
+
+            <Text style={{
+              fontFamily: 'Monda_700Bold',
+              fontSize: 20,
+              color: Colors.deepBlack,
+              marginBottom: 20,
+            }}>
+              Who did you trade with?
+            </Text>
+
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              backgroundColor: '#ebebea',
+              borderRadius: Radius.btn,
+              paddingHorizontal: 14,
+              marginBottom: 8,
+            }}>
+              <Search size={14} color={Colors.dark.muted} strokeWidth={2} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search by username..."
+                placeholderTextColor={Colors.dark.muted}
+                autoFocus
+                style={{
+                  flex: 1,
+                  fontFamily: 'Monda_400Regular',
+                  fontSize: 14,
+                  color: Colors.deepBlack,
+                  paddingVertical: 12,
+                }}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <X size={14} color={Colors.dark.muted} strokeWidth={2.5} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {results.map(p => (
+              <TouchableOpacity
+                key={p.id}
+                onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 4,
+                  borderBottomWidth: 1,
+                  borderColor: '#e8e8e6',
+                }}
+              >
+                <View style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: Colors.deepBlack,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>
+                    {p.username.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack }}>
+                  @{p.username}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            {query.trim().length >= 2 && (
+              <TouchableOpacity
+                onPress={() => handle({ type: 'contact', name: query.trim() })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingVertical: 12,
+                  paddingHorizontal: 4,
+                  borderBottomWidth: 1,
+                  borderColor: '#e8e8e6',
+                }}
+              >
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
+                  {query.trim()}
+                </Text>
+                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted }}>
+                  Not on Pindex
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {query.trim().length === 0 && (
+              <Text style={{
+                fontFamily: 'Monda_400Regular',
+                fontSize: 13,
+                color: Colors.dark.muted,
+                marginTop: 8,
+              }}>
+                Search for a Pindex user, or type a name to add as contact.
+              </Text>
+            )}
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  )
+}
+
+// ── Pin card in trade list ────────────────────────────────────────────────────
+function TradePinCard({ pin, onRemove }: { pin: TradePinOption; onRemove: () => void }) {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <View>
+        <PinCard
+          id={pin.id}
+          orgName={pin.organization?.name ?? 'Independent'}
+          orgColor={pin.organization?.color}
+          imageUrl={pin.image_url}
+          isConfirmed={pin.organization_id != null}
+        />
+        <TouchableOpacity
+          onPress={onRemove}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          style={{
+            position: 'absolute',
+            top: -4, right: -4,
+            width: 20, height: 20,
+            borderRadius: 10,
+            backgroundColor: Colors.deepBlack,
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.3)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <X size={10} color="#fff" strokeWidth={3} />
+        </TouchableOpacity>
+      </View>
+      <Text
+        numberOfLines={1}
+        style={{
+          marginTop: 6,
+          fontFamily: 'Monda_700Bold',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.85)',
+          textAlign: 'center',
+          width: PIN_CIRCLE + 16,
+        }}
+      >
+        {pin.name}
+      </Text>
     </View>
   )
 }
 
-// ── Pin search dropdown ────────────────────────────────────────────────────────
+// ── Add-pin circle (matches PinCard size) ─────────────────────────────────────
+function AddPinButton({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={{ alignItems: 'center' }}>
+      <View style={{
+        width: PIN_CIRCLE, height: PIN_CIRCLE,
+        borderRadius: PIN_CIRCLE / 2,
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        borderColor: 'rgba(255,255,255,0.25)',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Plus size={22} color="rgba(255,255,255,0.4)" strokeWidth={2} />
+      </View>
+      <Text style={{
+        marginTop: 6,
+        fontFamily: 'Monda_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.4)',
+      }}>
+        Add pin
+      </Text>
+    </TouchableOpacity>
+  )
+}
+
+// ── Pin search overlay panel ──────────────────────────────────────────────────
 function PinSearch({
   query,
   collectionMatches,
@@ -46,10 +278,10 @@ function PinSearch({
   onCancel,
 }: {
   query: string
-  collectionMatches: PinOption[]
-  dbMatches: PinOption[]
+  collectionMatches: TradePinOption[]
+  dbMatches: TradePinOption[]
   onQueryChange: (q: string) => void
-  onSelect: (pin: PinOption) => void
+  onSelect: (pin: TradePinOption) => void
   onCreatePin: (name: string) => void
   onCancel: () => void
 }) {
@@ -57,15 +289,14 @@ function PinSearch({
     <View style={{
       backgroundColor: '#fff',
       borderRadius: Radius.card,
-      padding: 12,
-      marginHorizontal: Spacing.screenPad,
+      padding: 14,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 6,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      elevation: 10,
     }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <Search size={14} color={Colors.dark.muted} strokeWidth={2} />
         <TextInput
           value={query}
@@ -75,14 +306,14 @@ function PinSearch({
           autoFocus
           style={{ flex: 1, fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack }}
         />
-        <TouchableOpacity onPress={onCancel}>
+        <TouchableOpacity onPress={onCancel} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 12, color: Colors.dark.muted }}>Cancel</Text>
         </TouchableOpacity>
       </View>
 
       {collectionMatches.length > 0 && (
         <>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: Colors.dark.muted, letterSpacing: 0.5, marginBottom: 6 }}>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 10, color: Colors.dark.muted, letterSpacing: 0.8, marginBottom: 6 }}>
             IN YOUR COLLECTION
           </Text>
           {collectionMatches.map(p => (
@@ -100,7 +331,7 @@ function PinSearch({
 
       {dbMatches.length > 0 && (
         <>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: Colors.dark.muted, letterSpacing: 0.5, marginBottom: 6, marginTop: collectionMatches.length > 0 ? 10 : 0 }}>
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 10, color: Colors.dark.muted, letterSpacing: 0.8, marginBottom: 6, marginTop: collectionMatches.length > 0 ? 12 : 0 }}>
             ALL PINS
           </Text>
           {dbMatches.map(p => (
@@ -118,13 +349,7 @@ function PinSearch({
       {query.trim().length > 0 && (
         <TouchableOpacity
           onPress={() => onCreatePin(query.trim())}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingVertical: 10,
-            marginTop: 4,
-          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, marginTop: 4 }}
         >
           <Plus size={14} color={Colors.blue} strokeWidth={2.5} />
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.blue }}>
@@ -142,70 +367,49 @@ function PinSearch({
   )
 }
 
-// ── Main screen ────────────────────────────────────────────────────────────────
+// ── Main screen ───────────────────────────────────────────────────────────────
 export default function NewTradeScreen() {
   const { session } = useAuth()
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
-  const [partnerQuery, setPartnerQuery] = useState('')
-  const [profileResults, setProfileResults] = useState<ProfileResult[]>([])
+  const [partnerModalVisible, setPartnerModalVisible] = useState(true)
   const [partner, setPartner] = useState<Partner | null>(null)
 
-  const [myCollection, setMyCollection] = useState<PinOption[]>([])
+  const [myCollection, setMyCollection] = useState<TradePinOption[]>([])
 
   const [activeSearch, setActiveSearch] = useState<'gave' | 'received' | null>(null)
   const [pinQuery, setPinQuery] = useState('')
-  const [dbPinResults, setDbPinResults] = useState<PinOption[]>([])
+  const [dbPinResults, setDbPinResults] = useState<TradePinOption[]>([])
 
-  const [gavePins, setGavePins] = useState<PinOption[]>([])
-  const [receivedPins, setReceivedPins] = useState<PinOption[]>([])
+  const [gavePins, setGavePins] = useState<TradePinOption[]>([])
+  const [receivedPins, setReceivedPins] = useState<TradePinOption[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!session?.user) return
     supabase
       .from('user_pins')
-      .select('pin:pins(id, name)')
+      .select('pin:pins(*, organization:organizations(*))')
       .eq('user_id', session.user.id)
       .eq('in_collection', true)
       .then(({ data }) => {
-        setMyCollection((data ?? []).flatMap(up => (up.pin ? [up.pin as PinOption] : [])))
+        setMyCollection((data ?? []).flatMap(up => (up.pin ? [up.pin as TradePinOption] : [])))
       })
   }, [])
-
-  useEffect(() => {
-    if (partnerQuery.length < 2) { setProfileResults([]); return }
-    const timer = setTimeout(() => {
-      supabase
-        .from('profiles')
-        .select('id, username')
-        .ilike('username', `%${partnerQuery}%`)
-        .neq('id', session?.user.id ?? '')
-        .limit(6)
-        .then(({ data }) => setProfileResults(data ?? []))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [partnerQuery])
 
   useEffect(() => {
     if (!pinQuery.trim() || !activeSearch) { setDbPinResults([]); return }
     const timer = setTimeout(() => {
       supabase
         .from('pins')
-        .select('id, name')
+        .select('*, organization:organizations(*)')
         .ilike('name', `%${pinQuery}%`)
         .limit(10)
         .then(({ data }) => setDbPinResults(data ?? []))
     }, 300)
     return () => clearTimeout(timer)
   }, [pinQuery, activeSearch])
-
-  const selectPartner = (p: Partner) => {
-    setPartner(p)
-    setPartnerQuery('')
-    setProfileResults([])
-  }
 
   const openSearch = (side: 'gave' | 'received') => {
     setActiveSearch(side)
@@ -219,7 +423,7 @@ export default function NewTradeScreen() {
     setDbPinResults([])
   }
 
-  const addPin = (pin: PinOption, side: 'gave' | 'received') => {
+  const addPin = (pin: TradePinOption, side: 'gave' | 'received') => {
     const current = side === 'gave' ? gavePins : receivedPins
     if (current.find(p => p.id === pin.id)) { closeSearch(); return }
     if (side === 'gave') setGavePins(prev => [...prev, pin])
@@ -228,9 +432,13 @@ export default function NewTradeScreen() {
   }
 
   const createAndAddPin = async (name: string, side: 'gave' | 'received') => {
-    const { data, error } = await supabase.from('pins').insert({ name, created_by: session!.user.id }).select('id, name').single()
+    const { data, error } = await supabase
+      .from('pins')
+      .insert({ name, created_by: session!.user.id })
+      .select('*, organization:organizations(*)')
+      .single()
     if (error || !data) { Alert.alert('Error', error?.message ?? 'Could not create pin'); return }
-    addPin(data, side)
+    addPin(data as TradePinOption, side)
   }
 
   const removePin = (id: string, side: 'gave' | 'received') => {
@@ -291,7 +499,7 @@ export default function NewTradeScreen() {
       }
     }
 
-    router.back();
+    router.back()
   }
 
   const collectionMatches = pinQuery.trim()
@@ -303,223 +511,186 @@ export default function NewTradeScreen() {
   const username = session?.user.email?.split('@')[0] ?? 'You'
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        scrollEnabled={activeSearch === null}
-      >
-        {/* Header */}
-        <View style={{
-          paddingTop: insets.top + 12,
-          paddingHorizontal: Spacing.screenPad,
-          paddingBottom: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ChevronLeft size={22} color={Colors.deepBlack} strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 22, color: Colors.deepBlack }}>
-            Record a trade
-          </Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: Colors.deepBlack }}>
 
-        {/* ── Top half: trading partner ── */}
-        <View style={{
-          backgroundColor: Colors.deepBlack,
-          marginHorizontal: Spacing.screenPad,
-          borderRadius: Radius.card,
-          padding: 16,
-          minHeight: 160,
+      {/* Partner modal — opens immediately on mount, and on name tap */}
+      <PartnerModal
+        visible={partnerModalVisible}
+        userId={session?.user.id ?? ''}
+        onSelect={p => setPartner(p)}
+        onClose={() => setPartnerModalVisible(false)}
+      />
+
+      {/* Back button */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={{
+          position: 'absolute',
+          top: insets.top + 14,
+          left: Spacing.screenPad,
+          zIndex: 30,
+          width: 36, height: 36,
+          borderRadius: 18,
+          backgroundColor: 'rgba(255,255,255,0.08)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <X size={17} color="rgba(255,255,255,0.7)" strokeWidth={2.5} />
+      </TouchableOpacity>
+
+      {/* ── TOP HALF — trading partner ── */}
+      <View style={{
+        flex: 1,
+        paddingTop: insets.top + 64,
+        paddingHorizontal: Spacing.screenPad,
+        paddingBottom: 16,
+      }}>
+        <Text style={{
+          fontFamily: 'Monda_700Bold',
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.55)',
+          letterSpacing: 1.4,
           marginBottom: 10,
         }}>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.8, marginBottom: 10 }}>
-            TRADING PARTNER
-          </Text>
+          TRADING PARTNER
+        </Text>
 
-          {/* Partner selector */}
+        {/* Partner name — tap to change */}
+        <TouchableOpacity
+          onPress={() => setPartnerModalVisible(true)}
+          style={{ marginBottom: 20 }}
+        >
           {partner ? (
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              borderRadius: Radius.btn,
-              padding: 10,
-              marginBottom: 12,
-            }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}>
-                  {partner.type === 'profile' ? `@${partner.name}` : partner.name}
+            <>
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: '#fff' }}>
+                {partner.type === 'profile' ? `@${partner.name}` : partner.name}
+              </Text>
+              {partner.type === 'contact' && (
+                <Text style={{
+                  fontFamily: 'Monda_400Regular',
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.45)',
+                  marginTop: 2,
+                }}>
+                  Not on Pindex
                 </Text>
-                {partner.type === 'contact' && (
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                    Not on Pindex
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity onPress={() => setPartner(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <X size={16} color="rgba(255,255,255,0.6)" strokeWidth={2.5} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ marginBottom: 10 }}>
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                borderRadius: Radius.btn,
-                paddingHorizontal: 12,
-                marginBottom: 6,
-              }}>
-                <Search size={13} color="rgba(255,255,255,0.5)" strokeWidth={2} />
-                <TextInput
-                  value={partnerQuery}
-                  onChangeText={setPartnerQuery}
-                  placeholder="Search by username..."
-                  placeholderTextColor="rgba(255,255,255,0.4)"
-                  style={{ flex: 1, fontFamily: 'Monda_400Regular', fontSize: 14, color: '#fff', paddingVertical: 10 }}
-                />
-              </View>
-              {profileResults.map(p => (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => selectPartner({ type: 'profile', id: p.id, name: p.username })}
-                  style={{ paddingVertical: 8, paddingHorizontal: 4, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}
-                >
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: '#fff' }}>@{p.username}</Text>
-                </TouchableOpacity>
-              ))}
-              {partnerQuery.trim().length >= 2 && (
-                <TouchableOpacity
-                  onPress={() => selectPartner({ type: 'contact', name: partnerQuery.trim() })}
-                  style={{ paddingVertical: 8, paddingHorizontal: 4 }}
-                >
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-                    + Save "{partnerQuery.trim()}" as contact
-                  </Text>
-                </TouchableOpacity>
               )}
-            </View>
+            </>
+          ) : (
+            <Text style={{
+              fontFamily: 'Monda_400Regular',
+              fontSize: 16,
+              color: 'rgba(255,255,255,0.3)',
+            }}>
+              Tap to select trading partner...
+            </Text>
           )}
+        </TouchableOpacity>
 
-          {/* Their pins (received = what they gave us) */}
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.8, marginBottom: 8 }}>
-            THEIR PINS
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        <Text style={{
+          fontFamily: 'Monda_700Bold',
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.55)',
+          letterSpacing: 1.4,
+          marginBottom: 14,
+        }}>
+          THEIR PINS
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
             {receivedPins.map(p => (
-              <PinChip key={p.id} name={p.name} onRemove={() => removePin(p.id, 'received')} />
+              <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'received')} />
             ))}
             {activeSearch !== 'received' && (
-              <TouchableOpacity
-                onPress={() => openSearch('received')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  borderRadius: Radius.btn,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderColor: 'rgba(255,255,255,0.3)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                }}
-              >
-                <Plus size={12} color="rgba(255,255,255,0.5)" strokeWidth={2.5} />
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Add pin</Text>
-              </TouchableOpacity>
+              <AddPinButton onPress={() => openSearch('received')} />
             )}
           </View>
-        </View>
+        </ScrollView>
+      </View>
 
-        {/* ── Bottom half: current user ── */}
-        <View style={{
-          backgroundColor: Colors.blue,
-          marginHorizontal: Spacing.screenPad,
-          borderRadius: Radius.card,
-          padding: 16,
-          minHeight: 140,
-          marginBottom: 16,
-        }}>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: 0.8, marginBottom: 8 }}>
-            YOUR PINS — @{username}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            {gavePins.map(p => (
-              <PinChip key={p.id} name={p.name} onRemove={() => removePin(p.id, 'gave')} />
-            ))}
-            {activeSearch !== 'gave' && (
-              <TouchableOpacity
-                onPress={() => openSearch('gave')}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  borderRadius: Radius.btn,
-                  borderWidth: 1,
-                  borderStyle: 'dashed',
-                  borderColor: 'rgba(255,255,255,0.4)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                }}
-              >
-                <Plus size={12} color="rgba(255,255,255,0.6)" strokeWidth={2.5} />
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Add pin</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Submit */}
-        <View style={{ paddingHorizontal: Spacing.screenPad, paddingBottom: insets.bottom + 24 }}>
+      {/* ── POKEBALL DIVIDER — hidden during pin search ── */}
+      {activeSearch === null && (
+        <View style={{ height: BALL_SIZE, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+          <View style={{
+            position: 'absolute',
+            left: 0, right: 0,
+            height: 1,
+            backgroundColor: 'rgba(255,255,255,0.1)',
+          }} />
           <TouchableOpacity
             onPress={submit}
             disabled={submitting}
+            activeOpacity={0.85}
             style={{
+              width: BALL_SIZE, height: BALL_SIZE,
+              borderRadius: BALL_SIZE / 2,
               backgroundColor: Colors.red,
-              paddingVertical: 16,
-              borderRadius: Radius.btn,
               alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 3,
+              borderColor: 'rgba(255,255,255,0.15)',
               shadowColor: Colors.red,
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.55,
+              shadowRadius: 16,
+              elevation: 10,
             }}
           >
             {submitting
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: '#fff' }}>Log trade</Text>
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <ArrowLeftRight size={22} color="#fff" strokeWidth={2.5} />
             }
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      )}
 
-      {/* Pin search overlay */}
+      {/* ── BOTTOM HALF — current user ── */}
+      <View style={{
+        flex: 1,
+        paddingTop: 16,
+        paddingHorizontal: Spacing.screenPad,
+        paddingBottom: insets.bottom + 24,
+      }}>
+        <Text style={{
+          fontFamily: 'Monda_700Bold',
+          fontSize: 10,
+          color: 'rgba(255,255,255,0.55)',
+          letterSpacing: 1.4,
+          marginBottom: 14,
+        }}>
+          YOUR PINS — @{username}
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
+            {gavePins.map(p => (
+              <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'gave')} />
+            ))}
+            {activeSearch !== 'gave' && (
+              <AddPinButton onPress={() => openSearch('gave')} />
+            )}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* ── PIN SEARCH OVERLAY ── */}
       {activeSearch !== null && (
         <View style={{
           position: 'absolute',
-          top: insets.top + 60,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,14,25,0.5)',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,14,25,0.75)',
+          justifyContent: 'center',
+          paddingHorizontal: Spacing.screenPad,
         }}>
-          <View style={{ marginTop: 8 }}>
-            <PinSearch
-              query={pinQuery}
-              collectionMatches={collectionMatches}
-              dbMatches={dbOnlyMatches}
-              onQueryChange={setPinQuery}
-              onSelect={pin => addPin(pin, activeSearch)}
-              onCreatePin={name => createAndAddPin(name, activeSearch)}
-              onCancel={closeSearch}
-            />
-          </View>
+          <PinSearch
+            query={pinQuery}
+            collectionMatches={collectionMatches}
+            dbMatches={dbOnlyMatches}
+            onQueryChange={setPinQuery}
+            onSelect={pin => addPin(pin, activeSearch)}
+            onCreatePin={name => createAndAddPin(name, activeSearch)}
+            onCancel={closeSearch}
+          />
         </View>
       )}
     </View>
