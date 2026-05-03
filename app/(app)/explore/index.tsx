@@ -83,7 +83,7 @@ export default function ExploreScreen() {
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Explore</Text>
           {tab === 'pins' && (
             <TouchableOpacity
-              onPress={() => router.push('/(app)/explore/new')}
+              onPress={() => router.push('/pins/new')}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -171,7 +171,7 @@ export default function ExploreScreen() {
                 orgName={item.organization?.name ?? 'Independent'}
                 orgLogoUrl={item.organization?.logo_url}
                 isConfirmed={item.organization_id != null}
-                onPress={() => router.push(`/(app)/explore/${item.id}`)}
+                onPress={() => router.push(`/pins/${item.id}`)}
               />
             </View>
           )}

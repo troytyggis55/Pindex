@@ -116,7 +116,7 @@ export default function UserProfileScreen() {
                 orgName={item.pin.organization?.name ?? 'Independent'}
                 orgLogoUrl={item.pin.organization?.logo_url}
                 isConfirmed={item.pin.org_claimed_at != null}
-                onPress={() => router.push(`/(app)/explore/${item.pin_id}`)}
+                onPress={() => router.push(`/pins/${item.pin_id}`)}
               />
             </View>
           ))}

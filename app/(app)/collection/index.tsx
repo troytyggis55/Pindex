@@ -193,7 +193,7 @@ export default function PersonalScreen() {
                     wishlisted: item.wishlisted,
                     want_to_trade: item.want_to_trade,
                   }}
-                  onPress={() => router.push(`/(app)/explore/${item.pin_id}`)}
+                  onPress={() => router.push(`/pins/${item.pin_id}`)}
                 />
               </View>
             )}
@@ -392,7 +392,7 @@ export default function PersonalScreen() {
                 orgName={item.organization?.name ?? 'Independent'}
                 orgLogoUrl={item.organization?.logo_url}
                 isConfirmed={item.organization_id != null}
-                onPress={() => router.push(`/(app)/explore/${item.id}`)}
+                onPress={() => router.push(`/pins/${item.id}`)}
               />
             </View>
           )}

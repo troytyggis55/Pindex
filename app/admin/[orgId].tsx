@@ -277,7 +277,7 @@ export default function OrgAdminScreen() {
                   borderColor: '#f0e090',
                 }}
               >
-                <TouchableOpacity onPress={() => router.push(`/(app)/explore/${pin.id}`)}>
+                <TouchableOpacity onPress={() => router.push(`/pins/${pin.id}`)}>
                   <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
                   {pin.description ? (
                     <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
@@ -317,7 +317,7 @@ export default function OrgAdminScreen() {
         </Text>
         <TouchableOpacity
           onPress={() => router.push({
-            pathname: '/(app)/explore/new',
+            pathname: '/pins/new',
             params: { orgId, orgName: org.name },
           })}
           style={{
@@ -342,7 +342,7 @@ export default function OrgAdminScreen() {
                 orgName={org.name}
                 orgLogoUrl={org.logo_url}
                 isConfirmed={true}
-                onPress={() => router.push(`/(app)/explore/${pin.id}`)}
+                onPress={() => router.push(`/pins/${pin.id}`)}
               />
             </View>
           ))}

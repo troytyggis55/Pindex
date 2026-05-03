@@ -130,7 +130,7 @@ export default function PinDetailScreen() {
           {/* Top-right: edit button (for owner) or unverified badge */}
           {canEdit ? (
             <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(app)/explore/new', params: { pinId } })}
+              onPress={() => router.push({ pathname: '/pins/new', params: { pinId } })}
               style={{
                 position: 'absolute',
                 top: 16,

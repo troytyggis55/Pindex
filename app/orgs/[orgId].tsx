@@ -77,7 +77,7 @@ export default function OrgDetailScreen() {
                 orgName={org.name}
                 orgLogoUrl={org.logo_url}
                 isConfirmed={pin.org_claimed_at != null}
-                onPress={() => router.push(`/(app)/explore/${pin.id}`)}
+                onPress={() => router.push(`/pins/${pin.id}`)}
               />
             </View>
           ))}
