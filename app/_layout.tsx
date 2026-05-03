@@ -17,15 +17,15 @@ function RootLayoutNav() {
     if (loading || profileLoading) return
 
     const inAuth = segments[0] === '(auth)'
-
     const inApp = segments[0] === '(app)'
+    const onResetPassword = segments[1] === 'reset-password'
 
     if (!session) {
       if (!inAuth) router.replace('/(auth)/login')
     } else if (!profile) {
-      router.replace('/(auth)/complete-profile')
+      if (!onResetPassword) router.replace('/(auth)/complete-profile')
     } else if (inAuth) {
-      router.replace('/(app)/collection')
+      if (!onResetPassword) router.replace('/(app)/collection')
     }
   }, [session, profile, loading, profileLoading])
 

@@ -76,6 +76,10 @@ export default function LoginScreen() {
         <Text>Sign in with Google</Text>
       </TouchableOpacity>
 
+      <Link href="/(auth)/forgot-password">
+        <Text style={{ textAlign: 'center', color: '#555' }}>Forgot password?</Text>
+      </Link>
+
       <Link href="/(auth)/signup">
         <Text style={{ textAlign: 'center', color: '#555' }}>
           Don't have an account? Sign up
