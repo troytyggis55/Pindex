@@ -2,7 +2,11 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ChevronLeft } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import { PinCard } from '@/components/ui/pin-card'
+import { OrgBadge } from '@/components/ui/org-badge'
+import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
 export default function OrgDetailScreen() {
@@ -31,47 +35,53 @@ export default function OrgDetailScreen() {
   const onRefresh = () => { setRefreshing(true); load() }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
   }
 
   if (!org) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Organization not found</Text></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><Text style={{ fontFamily: 'Monda_400Regular' }}>Organization not found.</Text></View>
   }
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24 }}
+      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
+      <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 }}>
+        <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>{org.name}</Text>
+      {/* Org header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+        <OrgBadge name={org.name} logoUrl={org.logo_url} size={48} />
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack }}>{org.name}</Text>
+      </View>
 
-      <Text style={{ fontSize: 16, fontWeight: '700', marginTop: 24, marginBottom: 12 }}>
+      {/* Pins section */}
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, marginBottom: 12 }}>
         Pins ({pins.length})
       </Text>
 
       {pins.length === 0 ? (
-        <Text style={{ color: '#888' }}>No pins yet.</Text>
+        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted }}>No pins yet.</Text>
       ) : (
-        pins.map(pin => (
-          <TouchableOpacity
-            key={pin.id}
-            onPress={() => router.push(`/(app)/explore/${pin.id}`)}
-            style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, marginBottom: 8 }}
-          >
-            <Text style={{ fontWeight: '600', fontSize: 15 }}>{pin.name}</Text>
-            {pin.description ? (
-              <Text style={{ color: '#888', fontSize: 13, marginTop: 4 }} numberOfLines={2}>{pin.description}</Text>
-            ) : null}
-            {pin.edition_size ? (
-              <Text style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Edition of {pin.edition_size}</Text>
-            ) : null}
-          </TouchableOpacity>
-        ))
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.gridGap }}>
+          {pins.map(pin => (
+            <View key={pin.id} style={{ width: '31%' }}>
+              <PinCard
+                id={pin.id}
+                name={pin.name}
+                imageUrl={pin.image_url}
+                orgName={org.name}
+                orgLogoUrl={org.logo_url}
+                isConfirmed={pin.org_claimed_at != null}
+                onPress={() => router.push(`/(app)/explore/${pin.id}`)}
+              />
+            </View>
+          ))}
+        </View>
       )}
     </ScrollView>
   )

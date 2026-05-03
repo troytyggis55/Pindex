@@ -1,199 +1,105 @@
 import { TouchableOpacity, View, Text, Image } from 'react-native'
-import { Colors, Radius, FlagKey } from '@/constants/theme'
-import { OrgBadge } from './org-badge'
-import { StatusChip } from './status-chip'
+import { Colors } from '@/constants/theme'
 
 interface PinCardProps {
-  id: string
-  name: string
-  index?: number | null          // #001-style display index
-  imageUrl?: string | null
-  orgName: string
-  orgColor?: string | null
-  orgLogoUrl?: string | null
-  isConfirmed?: boolean          // false = user-created / unverified org
-  flags?: {
-    in_collection?: boolean
-    wishlisted?: boolean
-    want_to_trade?: boolean
-  }
-  onPress?: () => void
+    id: string
+    name: string
+    imageUrl?: string | null
+    orgName: string
+    orgColor?: string | null
+    orgLogoUrl?: string | null  // unused — kept for call-site compatibility
+    isConfirmed?: boolean
+    index?: number | null       // unused — kept for call-site compatibility
+    flags?: Record<string, boolean>  // unused — kept for call-site compatibility
+    onPress?: () => void
 }
 
-const CARD_HEIGHT = 160
+const CIRCLE_SIZE = 76
+const SHADOW_SPACE = 0
 
-/**
- * Pokédex-style pin card.
- * - Background: org color (muted if unconfirmed)
- * - Pin image floats top-right, overflowing the card edge
- * - Flag dots stacked bottom-right
- * - Faded index number top-left
- */
+// Deterministically maps an org name to a vivid HSV(hue, 1, 1) hex color
+function orgNameToColor(name: string): string {
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+        hash = (name.charCodeAt(i) + ((hash << 5) - hash)) | 0
+    }
+    const hue = Math.abs(hash) % 360
+    const h = hue / 60
+    const x = 1 - Math.abs(h % 2 - 1)
+    let r = 0, g = 0, b = 0
+    if (h < 1)      { r = 1; g = x }
+    else if (h < 2) { r = x; g = 1 }
+    else if (h < 3) { g = 1; b = x }
+    else if (h < 4) { g = x; b = 1 }
+    else if (h < 5) { r = x; b = 1 }
+    else            { r = 1; b = x }
+    const hex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0')
+    return `#${hex(r)}${hex(g)}${hex(b)}`
+}
+
 export function PinCard({
-  name,
-  index,
-  imageUrl,
-  orgName,
-  orgColor,
-  orgLogoUrl,
-  isConfirmed = true,
-  flags = {},
-  onPress,
-}: PinCardProps) {
-  const bg = orgColor ?? Colors.orgFallback
-  const opacity = isConfirmed ? 1 : 0.22
+                            name,
+                            imageUrl,
+                            orgName,
+                            orgColor,
+                            isConfirmed = true,
+                            onPress,
+                        }: PinCardProps) {
+    const shadowColor = isConfirmed ? (orgColor ?? orgNameToColor(orgName)) : '#9CA3AF'
 
-  const activeFlagKeys = (Object.keys(flags) as FlagKey[]).filter(k => flags[k])
+    return (
+        <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ alignItems: 'center' }}>
+            <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE + SHADOW_SPACE, alignItems: 'center' }}>
+                {/* Elliptical hover shadow — rendered first so circle sits on top */}
+                <View
+                    className="absolute bottom-0 w-12 h-0 rounded"
+                    style={{
+                        backgroundColor: shadowColor,
+                        boxShadow: `0px 0px 20px 10px ${shadowColor}`,
+                    }}
 
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={{
-        height: CARD_HEIGHT,
-        borderRadius: Radius.card,
-        overflow: 'visible',           // allow image to overflow
-        borderWidth: isConfirmed ? 0 : 1.5,
-        borderStyle: isConfirmed ? undefined : 'dashed',
-        borderColor: isConfirmed ? undefined : 'rgba(255,255,255,0.4)',
-      }}
-    >
-      {/* Colored background */}
-      <View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          backgroundColor: bg,
-          opacity,
-          borderRadius: Radius.card,
-        }}
-      />
+                />
 
-      {/* Decorative concentric rings — bottom-left */}
-      <View style={{ position: 'absolute', bottom: -20, left: -20, opacity: 0.12 }}>
-        <Ring size={100} color="#fff" />
-      </View>
 
-      {/* Index number — top-left */}
-      {index != null && (
-        <Text
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 12,
-            fontFamily: 'Monda_700Bold',
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.5)',
-            letterSpacing: 1,
-          }}
-        >
-          #{String(index).padStart(3, '0')}
-        </Text>
-      )}
+                {/* Inner view clips image to circle */}
+                <View
+                    className="border"
+                    style={{
+                        width: CIRCLE_SIZE,
+                        height: CIRCLE_SIZE,
+                        borderRadius: CIRCLE_SIZE / 2,
+                        overflow: 'hidden',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#fff',
+                    }}
+                >
+                    {imageUrl ? (
+                        <Image
+                            source={{ uri: imageUrl }}
+                            style={{ width: '100%', height: '100%' }}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 26, color: '#000' }}>
+                            {orgName.charAt(0).toUpperCase()}
+                        </Text>
+                    )}
+                </View>
+            </View>
 
-      {/* Unconfirmed label */}
-      {!isConfirmed && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 10,
-            right: 12,
-            backgroundColor: 'rgba(0,0,0,0.35)',
-            paddingHorizontal: 6,
-            paddingVertical: 2,
-            borderRadius: 6,
-          }}
-        >
-          <Text style={{ color: '#fff', fontFamily: 'Monda_400Regular', fontSize: 10 }}>
-            Unverified
-          </Text>
-        </View>
-      )}
-
-      {/* Pin image — top-right, overflows upward */}
-      {imageUrl && (
-        <Image
-          source={{ uri: imageUrl }}
-          style={{
-            position: 'absolute',
-            top: -18,
-            right: -8,
-            width: 100,
-            height: 100,
-            borderRadius: 50,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-          }}
-          resizeMode="cover"
-        />
-      )}
-
-      {/* Bottom row: org badge + name + flag dots */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: 12,
-          left: 12,
-          right: 12,
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ flex: 1, marginRight: 8 }}>
-          {/* Org badge */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-            <OrgBadge name={orgName} logoUrl={orgLogoUrl} color={orgColor} size={18} />
             <Text
-              numberOfLines={1}
-              style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.8)' }}
+                numberOfLines={2}
+                style={{
+                    marginTop: 6,
+                    fontFamily: 'Monda_700Bold',
+                    fontSize: 11,
+                    color: Colors.deepBlack,
+                    textAlign: 'center',
+                }}
             >
-              {orgName}
+                {name}
             </Text>
-          </View>
-          {/* Pin name */}
-          <Text
-            numberOfLines={2}
-            style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}
-          >
-            {name}
-          </Text>
-        </View>
-
-        {/* Flag dots */}
-        {activeFlagKeys.length > 0 && (
-          <View style={{ gap: 4, alignItems: 'center' }}>
-            {activeFlagKeys.map(k => (
-              <StatusChip key={k} flag={k} active variant="dot" />
-            ))}
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  )
+        </TouchableOpacity>
+    )
 }
-
-/** Simple decorative concentric ring element */
-function Ring({ size, color }: { size: number; color: string }) {
-  return (
-    <View style={{ width: size, height: size, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-      {[1, 0.7, 0.45].map((scale, i) => (
-        <View
-          key={i}
-          style={{
-            position: 'absolute',
-            width: size * scale,
-            height: size * scale,
-            borderRadius: (size * scale) / 2,
-            borderWidth: 1.5,
-            borderColor: color,
-          }}
-        />
-      ))}
-    </View>
-  )
-}
-
-// Needed for absoluteFillObject
-import { StyleSheet } from 'react-native'

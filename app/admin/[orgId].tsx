@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { pickAndUpload } from '@/lib/upload'
 import { useAuth } from '@/context/auth'
 import { OrgBadge } from '@/components/ui/org-badge'
+import { PinCard } from '@/components/ui/pin-card'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
@@ -331,29 +332,19 @@ export default function OrgAdminScreen() {
       {pins.length === 0 ? (
         <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, marginBottom: 32 }}>No pins yet.</Text>
       ) : (
-        <View style={{ marginBottom: 32, gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.gridGap, marginBottom: 32 }}>
           {pins.map(pin => (
-            <TouchableOpacity
-              key={pin.id}
-              onPress={() => router.push(`/(app)/explore/${pin.id}`)}
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: Radius.card,
-                padding: 14,
-              }}
-            >
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
-              {pin.description ? (
-                <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                  {pin.description}
-                </Text>
-              ) : null}
-              {pin.edition_size ? (
-                <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 12, marginTop: 4 }}>
-                  Edition of {pin.edition_size}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
+            <View key={pin.id} style={{ width: '31%' }}>
+              <PinCard
+                id={pin.id}
+                name={pin.name}
+                imageUrl={pin.image_url}
+                orgName={org.name}
+                orgLogoUrl={org.logo_url}
+                isConfirmed={true}
+                onPress={() => router.push(`/(app)/explore/${pin.id}`)}
+              />
+            </View>
           ))}
         </View>
       )}

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus, ChevronRight, Pencil } from 'lucide-react-native'
+import { Plus, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
@@ -25,7 +25,7 @@ type CreatedPin = {
   image_url: string | null
   organization_id: string | null
   org_claimed_at: string | null
-  organization: { name: string } | null
+  organization: { name: string; logo_url: string | null } | null
 }
 
 const TABS: { key: Tab; label: string }[] = [
@@ -74,7 +74,7 @@ export default function PersonalScreen() {
         .eq('follower_id', myId),
       supabase
         .from('pins')
-        .select('id, name, image_url, organization_id, org_claimed_at, organization:organizations(name)')
+        .select('id, name, image_url, organization_id, org_claimed_at, organization:organizations(name, logo_url)')
         .eq('created_by', myId)
         .order('created_at', { ascending: false }),
     ])
@@ -169,11 +169,11 @@ export default function PersonalScreen() {
         <View style={{ flex: 1 }}>
           <FlatList
             data={pins}
-            numColumns={2}
+            numColumns={3}
             keyExtractor={i => i.id}
             refreshControl={refreshControl}
             columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
-            contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80, gap: 20 }}
+            contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80, gap: 16 }}
             ListEmptyComponent={
               <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
                 No pins yet — browse Explore to add some!
@@ -373,64 +373,29 @@ export default function PersonalScreen() {
       {tab === 'created' && (
         <FlatList
           data={createdPins}
+          numColumns={3}
           keyExtractor={p => p.id}
           refreshControl={refreshControl}
-          contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
+          columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80, gap: 16 }}
           ListEmptyComponent={
             <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
               You haven't created any pins yet.
             </Text>
           }
-          renderItem={({ item }) => {
-            const isClaimed = item.org_claimed_at !== null
-            const orgLabel = item.organization?.name ?? 'Independent'
-            return (
-              <TouchableOpacity
-                onPress={() => {
-                  if (!isClaimed) {
-                    router.push({ pathname: '/(app)/explore/new', params: { pinId: item.id } })
-                  } else {
-                    router.push(`/(app)/explore/${item.id}`)
-                  }
-                }}
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: Radius.card,
-                  padding: 14,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{item.name}</Text>
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted, marginTop: 2 }}>
-                    {orgLabel}
-                  </Text>
-                </View>
-                {/* Status badge */}
-                <View style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: Radius.chip,
-                  backgroundColor: isClaimed ? '#dcfce7' : '#fef3c7',
-                }}>
-                  <Text style={{
-                    fontFamily: 'Monda_700Bold',
-                    fontSize: 11,
-                    color: isClaimed ? '#166534' : '#92400e',
-                  }}>
-                    {isClaimed ? `Claimed` : 'Unclaimed'}
-                  </Text>
-                </View>
-                {/* Edit icon for unclaimed, chevron for claimed */}
-                {isClaimed
-                  ? <ChevronRight size={16} color={Colors.dark.muted} strokeWidth={2} />
-                  : <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
-                }
-              </TouchableOpacity>
-            )
-          }}
+          renderItem={({ item }) => (
+            <View style={{ flex: 1 }}>
+              <PinCard
+                id={item.id}
+                name={item.name}
+                imageUrl={item.image_url}
+                orgName={item.organization?.name ?? 'Independent'}
+                orgLogoUrl={item.organization?.logo_url}
+                isConfirmed={item.organization_id != null}
+                onPress={() => router.push(`/(app)/explore/${item.id}`)}
+              />
+            </View>
+          )}
         />
       )}
     </View>

@@ -32,17 +32,10 @@
 ## Design Language
 
 ### Pokédex-Inspired Card Style
-Pin cards take visual cues from Pokédex-style collection UIs:
-- Large rounded cards (20px radius) with the **organization's color** as the card background
-- The pin image floats large in the top-right corner, slightly overflowing the card edge
-- A faded `#001`-style index number in the top-left (light opacity on the colored background)
-- Pin name in bold Monda bottom-left
-- Organization badge (small circular logo pill) bottom-right or near pin name
-- Classification flags displayed as **colored border accents or small indicator dots**, not as background color:
-  - Green border/dot = in collection
-  - Blue border/dot = wishlisted
-  - Yellow border/dot = want to trade
-  - Multiple flags can be active simultaneously — stack the indicators
+App home screen style layout with circle solid color backgorund for each pin and name below. 
+The pin image is displayed in a circular container that overlaps the top edge of the card, creating a badge-like effect. The card background color is derived from the pin's associated organization's color, providing immediate visual grouping by org. 
+The card itself has a soft drop shadow to create depth and make it feel tactile and is reused around the entire app.
+
 
 ### Confirmed vs. Unconfirmed Pins
 Pins that were created by a user without an associated verified organization (i.e. no org or unverified org) are visually distinct:
@@ -66,7 +59,6 @@ The card layout should be designed to accommodate Level 2/3 overflow (pin image 
 - Grid gap: **12px**
 
 ### Decorative Elements
-- Subtle concentric-ring circular motifs (inspired by pin/badge anatomy, not Pokéball) used as background decoration on cards and screen headers
 - These are low-opacity, same color as the card surface or slightly lighter — purely decorative, never interfere with content
 
 ### Icons
@@ -106,11 +98,10 @@ Opens from any pin card (Explore or Personal).
   - **Details** — manufacturer, year, material
   - **Trade** — users who have this pin and want to trade (matchmaking info, read-only)
 
-**Action bar** at bottom of sheet: Three pill buttons for toggling the user's flags:
+**Color flags**: the Info and Details tabs,
 - "Have" (Green) — toggles `in_collection`
 - "Wishlist" (Blue) — toggles `wishlisted`  
 - "Trade" (Yellow) — toggles `want_to_trade`
-- Active state = filled pill, inactive = outlined pill
 
 ---
 
@@ -120,7 +111,7 @@ The user's personal space. Header shows username + avatar (initial-based circle 
 Three sub-tabs: **My Pins** | **My Trades** | **Following**
 
 #### My Pins
-2-column grid of the user's pin cards (same Pokédex style as Explore, but classification flags visible). Floating `+` button bottom-right to add a pin to the collection. The add flow:
+3-column grid of the user's pin cards (same Pokédex style as Explore, but classification flags visible). Floating `+` button bottom-right to add a pin to the collection. The add flow:
 1. Search existing pins in the DB
 2. If not found, option to create a new (unconfirmed) pin inline
 

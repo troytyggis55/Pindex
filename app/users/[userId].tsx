@@ -2,11 +2,16 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ChevronLeft } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
+import { PinCard } from '@/components/ui/pin-card'
+import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { UserPin, Pin } from '@/types'
 
-type PinItem = UserPin & { pin: Pin }
+type OrgSnap = { name: string; logo_url: string | null }
+type PinWithOrg = Pin & { organization: OrgSnap | null }
+type PinItem = UserPin & { pin: PinWithOrg }
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
@@ -25,7 +30,11 @@ export default function UserProfileScreen() {
     const myId = session!.user.id
     const [profileRes, pinsRes, followRes] = await Promise.all([
       supabase.from('profiles').select('username').eq('id', userId).single(),
-      supabase.from('user_pins').select('*, pin:pins(*)').eq('user_id', userId).eq('want_to_trade', true),
+      supabase
+        .from('user_pins')
+        .select('*, pin:pins(*, organization:organizations(name, logo_url))')
+        .eq('user_id', userId)
+        .eq('want_to_trade', true),
       supabase.from('follows').select('follower_id').eq('follower_id', myId).eq('following_id', userId).maybeSingle(),
     ])
     if (profileRes.data) setUsername(profileRes.data.username)
@@ -53,51 +62,65 @@ export default function UserProfileScreen() {
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
   }
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24, paddingTop: insets.top + 24 }}
+      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
+      <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 }}>
+        <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
       </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Text style={{ fontSize: 24, fontWeight: 'bold' }}>@{username}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack }}>@{username}</Text>
         <TouchableOpacity
           onPress={toggleFollow}
           disabled={followLoading}
           style={{
-            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8,
-            backgroundColor: isFollowing ? '#f0f0f0' : '#000',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: Radius.btn,
+            backgroundColor: isFollowing ? 'transparent' : Colors.deepBlack,
+            borderWidth: 1,
+            borderColor: isFollowing ? '#d0d0ce' : Colors.deepBlack,
           }}
         >
-          <Text style={{ color: isFollowing ? '#555' : '#fff', fontWeight: '600' }}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </Text>
+          {followLoading
+            ? <ActivityIndicator color={isFollowing ? Colors.dark.muted : '#fff'} size="small" />
+            : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: isFollowing ? Colors.dark.muted : '#fff' }}>
+                {isFollowing ? 'Following' : 'Follow'}
+              </Text>
+          }
         </TouchableOpacity>
       </View>
 
-      <Text style={{ fontSize: 17, fontWeight: '700', marginBottom: 12 }}>
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, marginBottom: 16 }}>
         Open to trading ({wantToTradePins.length})
       </Text>
 
       {wantToTradePins.length === 0 ? (
-        <Text style={{ color: '#888' }}>No pins listed for trading.</Text>
+        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted }}>No pins listed for trading.</Text>
       ) : (
-        wantToTradePins.map(item => (
-          <TouchableOpacity
-            key={item.id}
-            onPress={() => router.push(`/(app)/explore/${item.pin_id}`)}
-            style={{ borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, padding: 12, marginBottom: 8 }}
-          >
-            <Text style={{ fontWeight: '600' }}>{item.pin.name}</Text>
-          </TouchableOpacity>
-        ))
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.gridGap }}>
+          {wantToTradePins.map(item => (
+            <View key={item.id} style={{ width: '31%' }}>
+              <PinCard
+                id={item.id}
+                name={item.pin.name}
+                imageUrl={item.pin.image_url}
+                orgName={item.pin.organization?.name ?? 'Independent'}
+                orgLogoUrl={item.pin.organization?.logo_url}
+                isConfirmed={item.pin.org_claimed_at != null}
+                onPress={() => router.push(`/(app)/explore/${item.pin_id}`)}
+              />
+            </View>
+          ))}
+        </View>
       )}
     </ScrollView>
   )

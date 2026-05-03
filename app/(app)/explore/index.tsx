@@ -151,12 +151,12 @@ export default function ExploreScreen() {
       {tab === 'pins' && (
         <FlatList
           data={filteredPins}
-          numColumns={2}
+          numColumns={3}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           keyExtractor={p => p.id}
           keyboardShouldPersistTaps="handled"
           columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
-          contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 20 }}
+          contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 16 }}
           ListEmptyComponent={
             <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
               No pins found.

@@ -1,5 +1,22 @@
 # Pindex — Project Context
 
+## Code principles
+
+- **Reusability first.** Before building a new component or screen, check if one already exists. One canonical implementation beats two slightly different ones.
+- **PinCard is the only way to display a pin** in any list or grid. Do not render inline or one-off pin rows.
+- **All pin taps navigate to the info screen** (`/(app)/explore/{pinId}`). Never route directly to the edit screen from a pin tap. The info screen is responsible for deciding whether the edit button is visible based on the user's authority.
+- **Simplicity is king.** No duplicate screens, no parallel implementations. If a screen or flow already exists, reuse it.
+
+## Tech stack
+
+- **Expo (React Native)** with TypeScript
+- **NativeWind** for styling (Tailwind CSS syntax)
+- **Supabase** for auth, database, and storage
+- **Lucide** (`lucide-react-native`) for all icons — do not use other icon libraries
+- Generated DB types live in `types/supabase.ts` — regenerate with `npx supabase gen types typescript --linked > types/supabase.ts`
+- Supabase client singleton is at `lib/supabase.ts`
+- Friendly type aliases are in `types/index.ts`
+
 ## What we're building
 
 Pindex is a mobile app for collecting and trading physical pins, aimed primarily at students in organizations (student associations) in Trondheim, Norway.
@@ -45,24 +62,9 @@ When a new user signs up, a name-match check runs against all existing users' co
 - **Contact** — a non-Pindex person in a user's private catalog, linked to at least one trade. If they later join Pindex, trades can be confirmed and the contact linked to their new profile
 - **Follow** — social follow between users
 
-## UI notes
-
-- There is one general pin browsing page for discovery
-- The trade recording flow has its own dedicated page/modal with a pin search that surfaces three result groups: pins in the user's collection, all other pins in the DB, and a "create new pin" option
-
 ## Task tracking
 
 Planned features are tracked in `TODO.md` at the repo root. Each item is a checkbox. Remove the item from `TODO.md` once it is fully implemented.
-
-## Tech stack
-
-- **Expo (React Native)** with TypeScript
-- **NativeWind** for styling (Tailwind CSS syntax)
-- **Supabase** for auth, database, and storage
-- **Lucide** (`lucide-react-native`) for all icons — do not use other icon libraries
-- Generated DB types live in `types/supabase.ts` — regenerate with `npx supabase gen types typescript --linked > types/supabase.ts`
-- Supabase client singleton is at `lib/supabase.ts`
-- Friendly type aliases are in `types/index.ts`
 
 ## Frontend / design
 
