@@ -17,19 +17,19 @@ export default function ProfileScreen() {
   const [adminOrgs, setAdminOrgs] = useState<Organization[]>([])
   const [loadingOrgs, setLoadingOrgs] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [hasCreatedPins, setHasCreatedPins] = useState(false)
 
   useFocusEffect(useCallback(() => {
     if (!profile) return
     setLoadingOrgs(true)
-    supabase
-      .from('organizations')
-      .select('*')
-      .eq('admin_user_id', profile.id)
-      .order('name')
-      .then(({ data }) => {
-        setAdminOrgs(data ?? [])
-        setLoadingOrgs(false)
-      })
+    Promise.all([
+      supabase.from('organizations').select('*').eq('admin_user_id', profile.id).order('name'),
+      supabase.from('pins').select('id', { count: 'exact', head: true }).eq('created_by', profile.id),
+    ]).then(([orgsResult, pinsResult]) => {
+      setAdminOrgs(orgsResult.data ?? [])
+      setHasCreatedPins((pinsResult.count ?? 0) > 0)
+      setLoadingOrgs(false)
+    })
   }, [profile]))
 
   const handleAvatarUpload = async () => {
@@ -131,6 +131,27 @@ export default function ProfileScreen() {
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 18, color: Colors.deepBlack }}>@{username}</Text>
         </View>
 
+        {hasCreatedPins && <TouchableOpacity
+            onPress={() => router.push('/admin/created-pins')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#fff',
+              borderRadius: Radius.btn,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              marginBottom: 14,
+              gap: 8,
+            }}
+        >
+
+          <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+            Pins I've created
+          </Text>
+          <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
+        </TouchableOpacity>}
+
         {/* Admin orgs */}
         {loadingOrgs ? (
           <ActivityIndicator />
@@ -163,26 +184,7 @@ export default function ProfileScreen() {
         ) : null}
 
 
-        <TouchableOpacity
-            onPress={() => router.push('/admin/created-pins')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              borderRadius: Radius.btn,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              marginBottom: 14,
-              gap: 8,
-            }}
-        >
 
-          <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
-            Pins I've created
-          </Text>
-          <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
-        </TouchableOpacity>
 
         {/* Actions */}
         <View style={{ gap: 10, marginTop: 8 }}>
