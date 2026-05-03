@@ -18,6 +18,7 @@ type PendingClaim = {
   id: string
   name: string
   description: string | null
+  image_url: string | null
   created_at: string
   creator: { username: string } | null
 }
@@ -34,6 +35,7 @@ export default function OrgAdminScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [claiming, setClaiming] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const [orgName, setOrgName] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -58,7 +60,7 @@ export default function OrgAdminScreen() {
       // Pins assigned to this org but not yet claimed
       supabase
         .from('pins')
-        .select('id, name, description, created_at, creator:profiles!created_by(username)')
+        .select('id, name, description, image_url, created_at, creator:profiles!created_by(username)')
         .eq('organization_id', orgId)
         .is('org_claimed_at', null)
         .order('created_at', { ascending: false }),
@@ -119,6 +121,26 @@ export default function OrgAdminScreen() {
     }
     // Refresh to move pin from pending → claimed list
     load()
+  }
+
+  const deletePin = (pin: PendingClaim) => {
+    Alert.alert(
+      'Delete pin',
+      `Are you sure you want to delete the "${pin.name}" pin?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            setDeleting(pin.id)
+            const { error } = await supabase.from('pins').delete().eq('id', pin.id)
+            setDeleting(null)
+            if (error) { Alert.alert('Error', error.message); return }
+            setPendingClaims(prev => prev.filter(p => p.id !== pin.id))
+          },
+        },
+      ]
+    )
   }
 
   const findTransferUser = async () => {
@@ -270,6 +292,9 @@ export default function OrgAdminScreen() {
               <View
                 key={pin.id}
                 style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 30,
                   backgroundColor: '#fff',
                   borderRadius: Radius.card,
                   padding: 14,
@@ -277,33 +302,63 @@ export default function OrgAdminScreen() {
                   borderColor: '#f0e090',
                 }}
               >
-                <TouchableOpacity onPress={() => router.push(`/pins/${pin.id}`)}>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
-                  {pin.description ? (
-                    <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                      {pin.description}
+                <View style={{ flex: 1 }}>
+                  <TouchableOpacity onPress={() => router.push(`/pins/${pin.id}`)}>
+                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{pin.name}</Text>
+                    {pin.description ? (
+                      <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                        {pin.description}
+                      </Text>
+                    ) : null}
+                    <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: Colors.dark.muted, marginTop: 6 }}>
+                      {pin.creator ? `Added by @${pin.creator.username}` : 'Added by a user'} · {new Date(pin.created_at).toLocaleDateString()}
                     </Text>
-                  ) : null}
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: Colors.dark.muted, marginTop: 6 }}>
-                    {pin.creator ? `Added by @${pin.creator.username}` : 'Added by a user'} · {new Date(pin.created_at).toLocaleDateString()}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => claimPin(pin.id)}
-                  disabled={claiming === pin.id}
-                  style={{
-                    marginTop: 12,
-                    backgroundColor: Colors.deepBlack,
-                    borderRadius: Radius.btn,
-                    paddingVertical: 8,
-                    alignItems: 'center',
-                  }}
-                >
-                  {claiming === pin.id
-                    ? <ActivityIndicator color="#fff" size="small" />
-                    : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Claim this pin</Text>
-                  }
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                    <TouchableOpacity
+                      onPress={() => claimPin(pin.id)}
+                      disabled={claiming === pin.id || deleting === pin.id}
+                      style={{
+                        flex: 1,
+                        backgroundColor: Colors.deepBlack,
+                        borderRadius: Radius.btn,
+                        paddingVertical: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      {claiming === pin.id
+                        ? <ActivityIndicator color="#fff" size="small" />
+                        : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Claim</Text>
+                      }
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deletePin(pin)}
+                      disabled={claiming === pin.id || deleting === pin.id}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#dc2626',
+                        borderRadius: Radius.btn,
+                        paddingVertical: 8,
+                        paddingHorizontal: 16,
+                        alignItems: 'center',
+                      }}
+                    >
+                      {deleting === pin.id
+                        ? <ActivityIndicator color="#dc2626" size="small" />
+                        : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#dc2626' }}>Delete</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <PinCard
+                  id={pin.id}
+                  name={null}
+                  imageUrl={pin.image_url}
+                  orgName={org.name}
+                  orgLogoUrl={org.logo_url}
+                  isConfirmed={false}
+                  onPress={() => router.push(`/pins/${pin.id}`)}
+                />
               </View>
             ))}
           </View>

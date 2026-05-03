@@ -3,7 +3,7 @@ import { Colors } from '@/constants/theme'
 
 interface PinCardProps {
     id: string
-    name: string
+    name?: string
     imageUrl?: string | null
     orgName: string
     orgColor?: string | null
@@ -12,6 +12,7 @@ interface PinCardProps {
     index?: number | null       // unused — kept for call-site compatibility
     flags?: Record<string, boolean>  // unused — kept for call-site compatibility
     onPress?: () => void
+    hideName?: boolean  // unused — kept for call-site compatibility
 }
 
 const CIRCLE_SIZE = 76
@@ -88,20 +89,23 @@ export function PinCard({
                 </View>
             </View>
 
-            <Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={{
-                    marginTop: 6,
-                    fontFamily: 'Monda_700Bold',
-                    fontSize: 11,
-                    color: Colors.deepBlack,
-                    textAlign: 'center',
-                    width: CIRCLE_SIZE + 40,
-                }}
-            >
-                {name}
-            </Text>
+            {name && (
+                <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={{
+                        marginTop: 6,
+                        fontFamily: 'Monda_700Bold',
+                        fontSize: 11,
+                        color: Colors.deepBlack,
+                        textAlign: 'center',
+                        width: CIRCLE_SIZE + 40,
+                    }}
+                >
+                    {name}
+                </Text>
+            )}
         </TouchableOpacity>
     )
 }
+

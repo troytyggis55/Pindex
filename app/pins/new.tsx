@@ -111,7 +111,7 @@ export default function NewPinScreen() {
           onPress: async () => {
             const { error } = await supabase.from('pins').delete().eq('id', editPinId!)
             if (error) { Alert.alert('Error', error.message); return }
-            router.back()
+            router.dismiss(2)
           },
         },
       ]
@@ -425,19 +425,39 @@ export default function NewPinScreen() {
         {isEditMode && editOrgClaimed && (
           <>
             <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>Organization</Text>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 8,
-              backgroundColor: '#f0f0ee', borderRadius: Radius.btn,
-              borderWidth: 1, borderColor: '#d0d0ce',
-              paddingVertical: 12, paddingLeft: 12, paddingRight: 8,
-              marginBottom: 28,
-            }}>
-              <Building2 size={16} color={Colors.dark.muted} strokeWidth={2} />
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
-                {selectedOrg?.name ?? 'Unknown'}
-              </Text>
-              <TouchableOpacity onPress={confirmDeletePin} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28 }}>
+              <View style={{
+                flex: 1,
+                flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: '#f0f0ee', borderRadius: Radius.btn,
+                borderWidth: 1, borderColor: '#d0d0ce',
+                padding: 12,
+              }}>
+                <Building2 size={16} color={Colors.dark.muted} strokeWidth={2} />
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
+                  {selectedOrg?.name ?? 'Unknown'}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={confirmDeletePin}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  backgroundColor: '#fef2f2',
+                  borderWidth: 1,
+                  borderColor: '#fecaca',
+                  borderRadius: Radius.btn,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                }}
+              >
                 <Trash2 size={18} color="#ef4444" strokeWidth={2} />
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#ef4444' }}>
+                  Delete
+                </Text>
               </TouchableOpacity>
             </View>
           </>
