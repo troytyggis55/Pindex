@@ -291,7 +291,7 @@ export default function NewTradeScreen() {
       }
     }
 
-    router.replace(`/(app)/trades/${trade.id}`)
+    router.back();
   }
 
   const collectionMatches = pinQuery.trim()

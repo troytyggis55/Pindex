@@ -226,7 +226,7 @@ export default function PersonalScreen() {
           return (
             <TouchableOpacity
               key={item.id}
-              onPress={() => router.push(`/(app)/trades/${item.id}`)}
+              onPress={() => router.push(`/trades/${item.id}`)}
               style={{
                 backgroundColor: '#fff',
                 borderRadius: Radius.card,
