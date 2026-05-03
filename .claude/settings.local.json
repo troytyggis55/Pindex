@@ -14,7 +14,10 @@
       "Bash(node -e \"console.log\\(require\\('./node_modules/expo-image-picker/package.json'\\).version\\)\")",
       "Bash(node -e \"console.log\\(require\\('./node_modules/expo-file-system/package.json'\\).version\\)\")",
       "Bash(node -e \"const ip = require\\('./node_modules/expo-image-picker/build/ImagePicker'\\); console.log\\(Object.keys\\(ip\\)\\)\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__execute_sql",
+      "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_migrations",
+      "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_projects"
     ]
   }
 }

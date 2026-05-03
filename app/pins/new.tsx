@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
-import { ChevronLeft, Camera, Building2, X } from 'lucide-react-native'
+import { ChevronLeft, Camera, Building2, X, Trash2 } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickImageUri, uploadImageUri } from '@/lib/upload'
@@ -42,6 +42,7 @@ export default function NewPinScreen() {
     orgIdParam && orgNameParam ? { id: orgIdParam, name: orgNameParam } : null
   )
   const [orgNotOnPindex, setOrgNotOnPindex] = useState(false)
+  const [editOrgClaimed, setEditOrgClaimed] = useState(false)
 
   const isOrgPrefilled = !!orgIdParam
 
@@ -50,7 +51,7 @@ export default function NewPinScreen() {
     if (!editPinId || !session?.user) return
     const { data, error } = await supabase
       .from('pins')
-      .select('id, name, description, edition_size, released_at, image_url, created_by, org_claimed_at, organization:organizations(admin_user_id)')
+      .select('id, name, description, edition_size, released_at, image_url, created_by, org_claimed_at, organization_id, organization:organizations(id, name, admin_user_id)')
       .eq('id', editPinId)
       .single()
 
@@ -59,14 +60,17 @@ export default function NewPinScreen() {
       router.back()
       return
     }
+    const org = data.organization as { id: string; name: string; admin_user_id: string | null } | null
     const isCreatorUnclaimed = data.created_by === session.user.id && data.org_claimed_at === null
-    const isOrgAdmin = data.org_claimed_at !== null && (data.organization as { admin_user_id: string | null } | null)?.admin_user_id === session.user.id
+    const isOrgAdmin = data.org_claimed_at !== null && org?.admin_user_id === session.user.id
     if (!isCreatorUnclaimed && !isOrgAdmin) {
       Alert.alert('Not editable', 'You do not have permission to edit this pin.')
       router.back()
       return
     }
 
+    setEditOrgClaimed(data.org_claimed_at !== null)
+    if (org) setSelectedOrg({ id: org.id, name: org.name })
     setName(data.name)
     setDescription(data.description ?? '')
     setEditionSize(data.edition_size ? String(data.edition_size) : '')
@@ -81,7 +85,7 @@ export default function NewPinScreen() {
 
   // Debounced org search (create mode only, no org selected yet)
   useEffect(() => {
-    if (isEditMode || isOrgPrefilled || selectedOrg || !orgQuery.trim()) {
+    if ((isEditMode && editOrgClaimed) || isOrgPrefilled || selectedOrg || !orgQuery.trim()) {
       setOrgResults([])
       return
     }
@@ -94,7 +98,25 @@ export default function NewPinScreen() {
       setOrgResults(data ?? [])
     }, 300)
     return () => clearTimeout(timer)
-  }, [orgQuery, isEditMode, isOrgPrefilled, selectedOrg])
+  }, [orgQuery, isEditMode, editOrgClaimed, isOrgPrefilled, selectedOrg])
+
+  const confirmDeletePin = () => {
+    Alert.alert(
+      'Delete pin',
+      `Are you sure you want to delete the "${name}" pin?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase.from('pins').delete().eq('id', editPinId!)
+            if (error) { Alert.alert('Error', error.message); return }
+            router.back()
+          },
+        },
+      ]
+    )
+  }
 
   const pickImage = async () => {
     try {
@@ -125,6 +147,9 @@ export default function NewPinScreen() {
         edition_size: n,
         released_at: releasedAt.trim() || null,
       }
+      if (!editOrgClaimed) {
+        updates.organization_id = selectedOrg?.id ?? null
+      }
       if (imageUri) {
         try {
           const url = await uploadImageUri(imageUri, {
@@ -143,11 +168,23 @@ export default function NewPinScreen() {
       if (error) { Alert.alert('Error', error.message); return }
       router.back()
     } else {
-      // Create new pin
+      // Create new pin — auto-claim if user is admin of the selected org
+      let autoClaim: string | null = null
+      if (selectedOrg) {
+        const { data: orgAdmin } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('id', selectedOrg.id)
+          .eq('admin_user_id', session.user.id)
+          .maybeSingle()
+        if (orgAdmin) autoClaim = new Date().toISOString()
+      }
+
       const { data, error } = await supabase.from('pins').insert({
         name: name.trim(),
         organization_id: selectedOrg?.id ?? null,
         created_by: session.user.id,
+        org_claimed_at: autoClaim,
         description: description.trim() || null,
         edition_size: n,
         released_at: releasedAt.trim() || null,
@@ -282,12 +319,12 @@ export default function NewPinScreen() {
           style={{
             fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
             borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
-            padding: 12, marginBottom: isEditMode ? 28 : 24, backgroundColor: '#fff',
+            padding: 12, marginBottom: 24, backgroundColor: '#fff',
           }}
         />
 
-        {/* Organization (create mode only) */}
-        {!isEditMode && (
+        {/* Organization — create mode + edit mode for unclaimed creator */}
+        {(!isEditMode || (isEditMode && !editOrgClaimed)) && (
           <>
             <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>Organization</Text>
 
@@ -381,6 +418,28 @@ export default function NewPinScreen() {
                 </TouchableOpacity>
               </View>
             )}
+          </>
+        )}
+
+        {/* Delete — edit mode for claimed pins (org admin) */}
+        {isEditMode && editOrgClaimed && (
+          <>
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>Organization</Text>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 8,
+              backgroundColor: '#f0f0ee', borderRadius: Radius.btn,
+              borderWidth: 1, borderColor: '#d0d0ce',
+              paddingVertical: 12, paddingLeft: 12, paddingRight: 8,
+              marginBottom: 28,
+            }}>
+              <Building2 size={16} color={Colors.dark.muted} strokeWidth={2} />
+              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
+                {selectedOrg?.name ?? 'Unknown'}
+              </Text>
+              <TouchableOpacity onPress={confirmDeletePin} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Trash2 size={18} color="#ef4444" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
