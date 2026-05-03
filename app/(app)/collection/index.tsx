@@ -8,7 +8,7 @@ import { PinCard } from '@/components/ui/pin-card'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { UserPin, Pin, Trade, TradeItem, Organization } from '@/types'
 
-type Tab = 'pins' | 'trades' | 'following' | 'created'
+type Tab = 'pins' | 'trades' | 'following'
 type CollectionItem = UserPin & { pin: Pin & { organization: Organization | null } }
 type Profile = { id: string; username: string }
 type ContactRow = { id: string; name: string }
@@ -19,20 +19,11 @@ type TradeWithDetails = Trade & {
   trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
 }
 type FollowingUser = { following_id: string; profile: Profile }
-type CreatedPin = {
-  id: string
-  name: string
-  image_url: string | null
-  organization_id: string | null
-  org_claimed_at: string | null
-  organization: { name: string; logo_url: string | null } | null
-}
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pins', label: 'My Pins' },
   { key: 'trades', label: 'My Trades' },
   { key: 'following', label: 'Following' },
-  { key: 'created', label: 'Created' },
 ]
 
 const TAB_BAR_BOTTOM_OFFSET = 84
@@ -44,14 +35,13 @@ export default function PersonalScreen() {
   const [pins, setPins] = useState<CollectionItem[]>([])
   const [trades, setTrades] = useState<TradeWithDetails[]>([])
   const [following, setFollowing] = useState<FollowingUser[]>([])
-  const [createdPins, setCreatedPins] = useState<CreatedPin[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(async () => {
     if (!session?.user) return
     const myId = session.user.id
-    const [pinsRes, tradesRes, followingRes, createdRes] = await Promise.all([
+    const [pinsRes, tradesRes, followingRes] = await Promise.all([
       supabase
         .from('user_pins')
         .select('*, pin:pins(*, organization:organizations(*))')
@@ -72,16 +62,10 @@ export default function PersonalScreen() {
         .from('follows')
         .select('following_id, profile:profiles!following_id(id, username)')
         .eq('follower_id', myId),
-      supabase
-        .from('pins')
-        .select('id, name, image_url, organization_id, org_claimed_at, organization:organizations(name, logo_url)')
-        .eq('created_by', myId)
-        .order('created_at', { ascending: false }),
     ])
     if (pinsRes.data) setPins(pinsRes.data as CollectionItem[])
     if (tradesRes.data) setTrades(tradesRes.data as TradeWithDetails[])
     if (followingRes.data) setFollowing(followingRes.data as FollowingUser[])
-    if (createdRes.data) setCreatedPins(createdRes.data as CreatedPin[])
     setLoading(false)
     setRefreshing(false)
   }, [session?.user.id])
@@ -123,7 +107,7 @@ export default function PersonalScreen() {
     <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
       {/* Header */}
       <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Personal</Text>
           <TouchableOpacity onPress={() => router.push('/profile')}>
             <View style={{
@@ -369,35 +353,6 @@ export default function PersonalScreen() {
         />
       )}
 
-      {/* Created */}
-      {tab === 'created' && (
-        <FlatList
-          data={createdPins}
-          numColumns={3}
-          keyExtractor={p => p.id}
-          refreshControl={refreshControl}
-          columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
-          contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80, gap: 16 }}
-          ListEmptyComponent={
-            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
-              You haven't created any pins yet.
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <View style={{ flex: 1 }}>
-              <PinCard
-                id={item.id}
-                name={item.name}
-                imageUrl={item.image_url}
-                orgName={item.organization?.name ?? 'Independent'}
-                orgLogoUrl={item.organization?.logo_url}
-                isConfirmed={item.organization_id != null}
-                onPress={() => router.push(`/pins/${item.id}`)}
-              />
-            </View>
-          )}
-        />
-      )}
     </View>
   )
 }

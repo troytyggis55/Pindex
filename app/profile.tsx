@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ChevronLeft, Camera } from 'lucide-react-native'
+import {ChevronLeft, Camera, Pencil, ChevronRight} from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickAndUpload } from '@/lib/upload'
@@ -161,6 +161,28 @@ export default function ProfileScreen() {
             ))}
           </View>
         ) : null}
+
+
+        <TouchableOpacity
+            onPress={() => router.push('/admin/created-pins')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#fff',
+              borderRadius: Radius.btn,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              marginBottom: 14,
+              gap: 8,
+            }}
+        >
+
+          <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
+          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+            Pins I've created
+          </Text>
+          <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
+        </TouchableOpacity>
 
         {/* Actions */}
         <View style={{ gap: 10, marginTop: 8 }}>
