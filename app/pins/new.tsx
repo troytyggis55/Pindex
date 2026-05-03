@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter, useLocalSearchParams, useFocusEffect, Stack } from 'expo-router'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { ChevronLeft, Camera, Building2, X } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
@@ -186,13 +186,11 @@ export default function NewPinScreen() {
   const displayImage = imageUri ?? existingImageUrl
 
   return (
-    <>
-      <Stack.Screen options={{ presentation: 'modal', headerShown: false }} />
-      <ScrollView
-        style={{ flex: 1, backgroundColor: Colors.offWhite }}
-        contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
-        keyboardShouldPersistTaps="handled"
-      >
+    <ScrollView
+      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
+      keyboardShouldPersistTaps="handled"
+    >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 }}>
           <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
@@ -396,7 +394,6 @@ export default function NewPinScreen() {
               </Text>
           }
         </TouchableOpacity>
-      </ScrollView>
-    </>
+    </ScrollView>
   )
 }

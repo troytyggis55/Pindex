@@ -89,13 +89,15 @@ export function PinCard({
             </View>
 
             <Text
-                numberOfLines={2}
+                numberOfLines={1}
+                ellipsizeMode="tail"
                 style={{
                     marginTop: 6,
                     fontFamily: 'Monda_700Bold',
                     fontSize: 11,
                     color: Colors.deepBlack,
                     textAlign: 'center',
+                    width: CIRCLE_SIZE + 40,
                 }}
             >
                 {name}

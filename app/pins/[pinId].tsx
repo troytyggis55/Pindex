@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, RefreshControl, Image } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft, Users, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
@@ -28,6 +29,7 @@ export default function PinDetailScreen() {
   const { pinId } = useLocalSearchParams<{ pinId: string }>()
   const { session } = useAuth()
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const [pin, setPin] = useState<PinWithOrg | null>(null)
   const [userPin, setUserPin] = useState<UserPinFlags | null>(null)
   const [traders, setTraders] = useState<WantToTrader[]>([])
@@ -112,7 +114,7 @@ export default function PinDetailScreen() {
             onPress={() => router.back()}
             style={{
               position: 'absolute',
-              top: 16,
+              top: insets.top + 16,
               left: 16,
               flexDirection: 'row',
               alignItems: 'center',
@@ -133,7 +135,7 @@ export default function PinDetailScreen() {
               onPress={() => router.push({ pathname: '/pins/new', params: { pinId } })}
               style={{
                 position: 'absolute',
-                top: 16,
+                top: insets.top + 16,
                 right: 16,
                 backgroundColor: 'rgba(0,0,0,0.3)',
                 paddingHorizontal: 10,
@@ -150,7 +152,7 @@ export default function PinDetailScreen() {
           ) : !pin.organization_id ? (
             <View style={{
               position: 'absolute',
-              top: 16,
+              top: insets.top + 16,
               right: 16,
               backgroundColor: 'rgba(0,0,0,0.3)',
               paddingHorizontal: 10,
