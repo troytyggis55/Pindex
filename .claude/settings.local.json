@@ -19,7 +19,8 @@
       "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_migrations",
       "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_projects",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\trygv\\\\repos\\\\Pindex\" -Recurse -Force)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "PowerShell(cd C:\\\\Users\\\\trygv\\\\repos\\\\Pindex && npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"collection|trade-card|error TS\" } | Select-Object -First 30)"
     ]
   }
 }

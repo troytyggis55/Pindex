@@ -1,14 +1,15 @@
 import { useCallback, useState } from 'react'
 import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
-import { Plus, ChevronRight } from 'lucide-react-native'
+import { Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { UserRow } from '@/components/ui/user-row'
 import { Avatar } from '@/components/ui/avatar'
 import { TabBar } from '@/components/ui/tab-bar'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { TradeCard } from '@/components/ui/trade-card'
+import { Colors, Spacing } from '@/constants/theme'
 import type { CollectionItem, TradeWithDetails, FollowingUser } from '@/types'
 
 type Tab = 'pins' | 'trades' | 'following'
@@ -182,59 +183,6 @@ export default function PersonalScreen() {
         const pendingConfirmation = trades.filter(t => t.receiver_profile_id === myId && t.status === 'unconfirmed')
         const myTrades = trades.filter(t => t.initiator_id === myId || (t.receiver_profile_id === myId && t.status === 'confirmed'))
 
-        const renderTrade = (item: TradeWithDetails, isPending = false) => {
-          const isInitiator = item.initiator_id === myId
-          const partnerName = isInitiator
-            ? (item.receiver_profile?.username ?? item.receiver_contact?.name ?? '?')
-            : item.initiator.username
-          const gave = item.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
-          const received = item.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
-          const isUnconfirmed = item.status === 'unconfirmed'
-
-          return (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => router.push(`/trades/${item.id}`)}
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: Radius.card,
-                padding: 14,
-                borderWidth: isPending ? 1.5 : 0,
-                borderColor: isPending ? Colors.yellow : 'transparent',
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>
-                  {partnerName}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <View style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 8,
-                    backgroundColor: isUnconfirmed ? '#fef3c7' : '#dcfce7',
-                  }}>
-                    <Text style={{
-                      fontFamily: 'Monda_700Bold',
-                      fontSize: 11,
-                      color: isUnconfirmed ? '#92400e' : '#166534',
-                    }}>
-                      {isUnconfirmed ? 'Unconfirmed' : 'Confirmed'}
-                    </Text>
-                  </View>
-                  <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
-                </View>
-              </View>
-              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted }}>
-                Gave: {gave.map(t => t.pin.name).join(', ') || '—'}
-              </Text>
-              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted }}>
-                Received: {received.map(t => t.pin.name).join(', ') || '—'}
-              </Text>
-            </TouchableOpacity>
-          )
-        }
-
         return (
           <FlatList
             data={myTrades}
@@ -247,7 +195,14 @@ export default function PersonalScreen() {
                   AWAITING YOUR CONFIRMATION ({pendingConfirmation.length})
                 </Text>
                 {pendingConfirmation.map(t => (
-                  <View key={t.id} style={{ marginBottom: 10 }}>{renderTrade(t, true)}</View>
+                  <View key={t.id} style={{ marginBottom: 10 }}>
+                    <TradeCard
+                      trade={t}
+                      currentUserId={myId}
+                      isPending
+                      onPress={() => router.push(`/trades/${t.id}`)}
+                    />
+                  </View>
                 ))}
                 {myTrades.length > 0 && (
                   <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted, marginTop: 8, marginBottom: 0, letterSpacing: 0.5 }}>
@@ -260,7 +215,13 @@ export default function PersonalScreen() {
               ? <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>No trades recorded yet.</Text>
               : null
             }
-            renderItem={({ item }) => renderTrade(item)}
+            renderItem={({ item }) => (
+              <TradeCard
+                trade={item}
+                currentUserId={myId}
+                onPress={() => router.push(`/trades/${item.id}`)}
+              />
+            )}
           />
         )
       })()}
