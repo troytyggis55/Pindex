@@ -1,6 +1,8 @@
 ## Login and onboarding
 
-- [x] **Proper Google sign-in** — [Google setup guide](https://claude.ai/share/1749529e-dcb5-4138-b923-18b4dca2980a) - Were not yet going to bother with google login yet.
+- [ ] **Proper Google sign-in** — [Google setup guide](https://claude.ai/share/1749529e-dcb5-4138-b923-18b4dca2980a) - Were not yet going to bother with google login yet.
+- [ ] **Fix reset password** — The reset password flow is currently broken and hangs on "Verifying reset link…" 
+
 
 ## Security
 
