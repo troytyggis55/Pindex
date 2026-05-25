@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { Link } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
-import * as Linking from 'expo-linking'
 import { supabase } from '@/lib/supabase'
 
 WebBrowser.maybeCompleteAuthSession()
@@ -19,27 +18,6 @@ export default function LoginScreen() {
     setLoading(false)
   }
 
-  const signInWithGoogle = async () => {
-    const redirectUrl = Linking.createURL('/')
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
-    })
-    if (error || !data.url) {
-      Alert.alert('Error', error?.message ?? 'Could not start Google sign-in')
-      return
-    }
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
-    if (result.type === 'success') {
-      const params = new URLSearchParams(result.url.split('#')[1])
-      const access_token = params.get('access_token')
-      const refresh_token = params.get('refresh_token')
-      if (access_token && refresh_token) {
-        await supabase.auth.setSession({ access_token, refresh_token })
-      }
-    }
-  }
-
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 12 }}>
       <Text style={{ fontSize: 28, fontWeight: 'bold' }}>Pindex</Text>
@@ -51,14 +29,16 @@ export default function LoginScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        style={{ borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 8 }}
+        className='border border-gray-500 p-3 rounded-lg color-black'
+        placeholderTextColor='gray'
       />
       <TextInput
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{ borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 8 }}
+        className='border border-gray-500 p-3 rounded-lg color-black'
+        placeholderTextColor='gray'
       />
 
       <TouchableOpacity
@@ -69,20 +49,13 @@ export default function LoginScreen() {
         <Text style={{ color: '#fff' }}>{loading ? 'Signing in...' : 'Sign in'}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={signInWithGoogle}
-        style={{ borderWidth: 1, borderColor: '#ccc', padding: 14, borderRadius: 8, alignItems: 'center' }}
-      >
-        <Text>Sign in with Google</Text>
-      </TouchableOpacity>
-
       <Link href="/(auth)/forgot-password">
         <Text style={{ textAlign: 'center', color: '#555' }}>Forgot password?</Text>
       </Link>
 
       <Link href="/(auth)/signup">
         <Text style={{ textAlign: 'center', color: '#555' }}>
-          Don't have an account? Sign up
+          Don&apos;t have an account? Sign up
         </Text>
       </Link>
     </View>
