@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Image } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
+import { Avatar } from '@/components/ui/avatar'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { CollectionItem } from '@/types'
 
@@ -79,22 +80,7 @@ export default function UserProfileScreen() {
       </TouchableOpacity>
 
       <View style={{ alignItems: 'center', marginBottom: 20 }}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            style={{ width: 72, height: 72, borderRadius: 36 }}
-          />
-        ) : (
-          <View style={{
-            width: 72, height: 72, borderRadius: 36,
-            backgroundColor: Colors.deepBlack,
-            alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: '#fff' }}>
-              {username.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <Avatar url={avatarUrl} username={username} size={72} />
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>

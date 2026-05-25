@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Image } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { UserRow } from '@/components/ui/user-row'
+import { Avatar } from '@/components/ui/avatar'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { CollectionItem, TradeWithDetails, FollowingUser } from '@/types'
 
@@ -101,20 +102,7 @@ export default function PersonalScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Personal</Text>
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            {profile?.avatar_url ? (
-              <Image
-                source={{ uri: profile.avatar_url }}
-                style={{ width: 40, height: 40, borderRadius: 20 }}
-              />
-            ) : (
-              <View style={{
-                width: 40, height: 40, borderRadius: 20,
-                backgroundColor: Colors.deepBlack,
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>{initial}</Text>
-              </View>
-            )}
+            <Avatar url={profile?.avatar_url} username={profile?.username ?? username} size={40} />
           </TouchableOpacity>
         </View>
 

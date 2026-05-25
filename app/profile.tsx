@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {ChevronLeft, Camera, Pencil, ChevronRight} from 'lucide-react-native'
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickAndUpload } from '@/lib/upload'
 import { OrgBadge } from '@/components/ui/org-badge'
+import { Avatar } from '@/components/ui/avatar'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization } from '@/types'
 
@@ -100,20 +101,7 @@ export default function ProfileScreen() {
         <View style={{ alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={handleAvatarUpload} disabled={uploadingAvatar} activeOpacity={0.8}>
             <View style={{ position: 'relative' }}>
-              {profile?.avatar_url ? (
-                <Image
-                  source={{ uri: profile.avatar_url }}
-                  style={{ width: 80, height: 80, borderRadius: 40 }}
-                />
-              ) : (
-                <View style={{
-                  width: 80, height: 80, borderRadius: 40,
-                  backgroundColor: Colors.deepBlack,
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 32, color: '#fff' }}>{initial}</Text>
-                </View>
-              )}
+              <Avatar url={profile?.avatar_url} username={username} size={80} />
               <View style={{
                 position: 'absolute', bottom: 0, right: 0,
                 width: 26, height: 26, borderRadius: 13,

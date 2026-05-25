@@ -1,6 +1,7 @@
-import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { ChevronRight } from 'lucide-react-native'
 import { Colors } from '@/constants/theme'
+import { Avatar } from '@/components/ui/avatar'
 
 export interface UserRowProps {
   id: string
@@ -39,18 +40,7 @@ export function UserRow({
     <View className={`flex-row items-center gap-3 ${card ? 'bg-white rounded-card p-3' : 'py-3 border-b border-gray-100'}`}>
       {/* Avatar */}
       <TouchableOpacity onPress={onPress} disabled={!onPress} activeOpacity={onPress ? 0.7 : 1}>
-        {avatarUrl ? (
-          <Image
-            source={{ uri: avatarUrl }}
-            className="w-10 h-10 rounded-full"
-          />
-        ) : (
-          <View className="w-10 h-10 rounded-full bg-deep-black items-center justify-center">
-            <Text className="font-monda-bold text-base text-white">
-              {username.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <Avatar url={avatarUrl} username={username} size={40} />
       </TouchableOpacity>
 
       {/* Username */}
