@@ -2,10 +2,10 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ChevronLeft } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { PinCard } from '@/components/ui/pin-card'
 import { OrgBadge } from '@/components/ui/org-badge'
+import { ScreenHeader } from '@/components/ui/screen-header'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
@@ -48,10 +48,7 @@ export default function OrgDetailScreen() {
       contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 20 }}>
-        <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
-      </TouchableOpacity>
+      <ScreenHeader onBack={() => router.back()} />
 
       {/* Org header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 28 }}>

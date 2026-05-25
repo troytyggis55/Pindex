@@ -2,12 +2,13 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {ChevronLeft, Camera, Pencil, ChevronRight} from 'lucide-react-native'
+import { Camera, Pencil, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickAndUpload } from '@/lib/upload'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { Avatar } from '@/components/ui/avatar'
+import { ScreenHeader } from '@/components/ui/screen-header'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization } from '@/types'
 
@@ -89,12 +90,11 @@ export default function ProfileScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.offWhite, paddingTop: insets.top }}>
       {/* Header */}
-      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={24} color={Colors.deepBlack} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 22, color: Colors.deepBlack }}>Profile</Text>
-      </View>
+      <ScreenHeader
+        title="Profile"
+        onBack={() => router.back()}
+        className="px-4 pt-4"
+      />
 
       <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 24, gap: 24 }}>
         {/* Avatar */}
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
                 <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
                   {org.name}
                 </Text>
-                <ChevronLeft size={16} color={Colors.dark.muted} style={{ transform: [{ rotate: '180deg' }] }} />
+                <ChevronRight size={16} color={Colors.dark.muted} strokeWidth={2} />
               </TouchableOpacity>
             ))}
           </View>
