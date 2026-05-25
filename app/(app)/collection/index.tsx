@@ -7,6 +7,7 @@ import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { UserRow } from '@/components/ui/user-row'
 import { Avatar } from '@/components/ui/avatar'
+import { TabBar } from '@/components/ui/tab-bar'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { CollectionItem, TradeWithDetails, FollowingUser } from '@/types'
 
@@ -107,31 +108,12 @@ export default function PersonalScreen() {
         </View>
 
         {/* Tab chips */}
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          {TABS.map(({ key, label }) => (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setTab(key)}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                borderRadius: Radius.btn,
-                alignItems: 'center',
-                backgroundColor: tab === key ? Colors.deepBlack : 'transparent',
-                borderWidth: 1,
-                borderColor: tab === key ? Colors.deepBlack : '#d0d0ce',
-              }}
-            >
-              <Text style={{
-                fontFamily: 'Monda_700Bold',
-                fontSize: 11,
-                color: tab === key ? '#fff' : Colors.dark.muted,
-              }}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <TabBar
+          tabs={TABS}
+          active={tab}
+          onChange={setTab}
+          equalWidth
+        />
       </View>
 
       {/* My Pins */}

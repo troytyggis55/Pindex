@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
+import { TabBar } from '@/components/ui/tab-bar'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
 import type { PinWithOrg, UserPinFlags, WantToTrader } from '@/types'
@@ -220,40 +221,12 @@ export default function PinDetailScreen() {
           </View>
 
           {/* Detail tabs */}
-          <View style={{
-            flexDirection: 'row',
-            backgroundColor: '#f0f0ee',
-            borderRadius: Radius.btn,
-            padding: 3,
-            marginBottom: 20,
-          }}>
-            {DETAIL_TABS.map(({ key, label }) => (
-              <TouchableOpacity
-                key={key}
-                onPress={() => setDetailTab(key)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 8,
-                  borderRadius: 11,
-                  alignItems: 'center',
-                  backgroundColor: detailTab === key ? '#fff' : 'transparent',
-                  shadowColor: detailTab === key ? '#000' : 'transparent',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 2,
-                  elevation: detailTab === key ? 2 : 0,
-                }}
-              >
-                <Text style={{
-                  fontFamily: 'Monda_700Bold',
-                  fontSize: 13,
-                  color: detailTab === key ? Colors.deepBlack : Colors.dark.muted,
-                }}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TabBar
+            tabs={DETAIL_TABS}
+            active={detailTab}
+            onChange={setDetailTab}
+            variant="segmented"
+          />
 
           {/* Tab content */}
           {detailTab === 'info' && (
