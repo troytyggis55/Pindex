@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
 import { OrgBadge } from '@/components/ui/org-badge'
+import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
 import type { Pin, Organization, UserPin } from '@/types'
@@ -311,32 +312,13 @@ export default function PinDetailScreen() {
                     </Text>
                   </View>
                   {traders.map(t => (
-                    <TouchableOpacity
+                    <UserRow
                       key={t.user_id}
+                      id={t.user_id}
+                      username={t.profile.username}
                       onPress={() => router.push(`/users/${t.user_id}`)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: '#fff',
-                        borderRadius: Radius.btn,
-                        padding: 12,
-                        gap: 10,
-                      }}
-                    >
-                      <View style={{
-                        width: 32, height: 32, borderRadius: 16,
-                        backgroundColor: Colors.deepBlack,
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>
-                          {t.profile.username.charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack, flex: 1 }}>
-                        @{t.profile.username}
-                      </Text>
-                      <ChevronLeft size={16} color={Colors.dark.muted} style={{ transform: [{ rotate: '180deg' }] }} />
-                    </TouchableOpacity>
+                      showChevron
+                    />
                   ))}
                 </>
               )}

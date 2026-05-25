@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl, Image } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Search, Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { OrgBadge } from '@/components/ui/org-badge'
+import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Pin, Organization } from '@/types'
 
@@ -225,65 +226,16 @@ export default function ExploreScreen() {
               No users found.
             </Text>
           }
-          renderItem={({ item }) => {
-            const isFollowing = followingIds.has(item.id)
-            return (
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: '#fff',
-                borderRadius: Radius.card,
-                padding: 12,
-                gap: 12,
-              }}>
-                {/* Avatar */}
-                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)}>
-                  {item.avatar_url ? (
-                    <Image
-                      source={{ uri: item.avatar_url }}
-                      style={{ width: 40, height: 40, borderRadius: 20 }}
-                    />
-                  ) : (
-                    <View style={{
-                      width: 40, height: 40, borderRadius: 20,
-                      backgroundColor: Colors.deepBlack,
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
-                        {item.username.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)} style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
-                    @{item.username}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => toggleFollow(item.id)}
-                  style={{
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                    borderRadius: Radius.btn,
-                    backgroundColor: isFollowing ? 'transparent' : Colors.deepBlack,
-                    borderWidth: 1,
-                    borderColor: isFollowing ? '#d0d0ce' : Colors.deepBlack,
-                  }}
-                >
-                  <Text style={{
-                    fontFamily: 'Monda_700Bold',
-                    fontSize: 12,
-                    color: isFollowing ? Colors.dark.muted : '#fff',
-                  }}>
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )
-          }}
+          renderItem={({ item }) => (
+            <UserRow
+              id={item.id}
+              username={item.username}
+              avatarUrl={item.avatar_url}
+              onPress={() => router.push(`/users/${item.id}`)}
+              isFollowing={followingIds.has(item.id)}
+              onFollowToggle={() => toggleFollow(item.id)}
+            />
+          )}
         />
       )}
     </View>

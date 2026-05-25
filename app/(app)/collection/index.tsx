@@ -5,6 +5,7 @@ import { Plus, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
+import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { UserPin, Pin, Trade, TradeItem, Organization } from '@/types'
 
@@ -317,52 +318,14 @@ export default function PersonalScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              borderRadius: Radius.card,
-              padding: 12,
-              gap: 12,
-            }}>
-              <TouchableOpacity onPress={() => router.push(`/users/${item.following_id}`)}>
-                {item.profile.avatar_url ? (
-                  <Image
-                    source={{ uri: item.profile.avatar_url }}
-                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                  />
-                ) : (
-                  <View style={{
-                    width: 40, height: 40, borderRadius: 20,
-                    backgroundColor: Colors.deepBlack,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
-                      {item.profile.username.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push(`/users/${item.following_id}`)} style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
-                  @{item.profile.username}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => unfollow(item.following_id)}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  borderRadius: Radius.btn,
-                  borderWidth: 1,
-                  borderColor: '#d0d0ce',
-                }}
-              >
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 12, color: Colors.dark.muted }}>
-                  Unfollow
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <UserRow
+              id={item.following_id}
+              username={item.profile.username}
+              avatarUrl={item.profile.avatar_url}
+              onPress={() => router.push(`/users/${item.following_id}`)}
+              isFollowing
+              onFollowToggle={() => unfollow(item.following_id)}
+            />
           )}
         />
       )}

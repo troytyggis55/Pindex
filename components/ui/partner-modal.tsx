@@ -6,12 +6,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X, Search } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import { UserRow } from '@/components/ui/user-row'
 
 export type Partner =
   | { type: 'profile'; id: string; name: string }
   | { type: 'contact'; name: string }
 
-type ProfileResult = { id: string; username: string }
+type ProfileResult = { id: string; username: string; avatar_url: string | null }
 
 const SHEET_HEIGHT = Dimensions.get('window').height * 0.72
 
@@ -33,7 +34,7 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
     if (!userId) return
     supabase
       .from('follows')
-      .select('profile:profiles!following_id(id, username, created_at)')
+      .select('profile:profiles!following_id(id, username, avatar_url, created_at)')
       .eq('follower_id', userId)
       .order('created_at', { referencedTable: 'profiles', ascending: false })
       .limit(20)
@@ -55,7 +56,7 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
     const timer = setTimeout(() => {
       supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar_url')
         .ilike('username', `%${query}%`)
         .neq('id', userId)
         .limit(8)
@@ -65,7 +66,6 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
   }, [query])
 
   const handle = (p: Partner) => { onSelect(p); onClose() }
-
   const isSearching = query.length > 0
 
   return (
@@ -86,9 +86,17 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
             style={{ height: SHEET_HEIGHT, paddingBottom: insets.bottom + 24 }}
           >
             <View className="flex-1 px-4 pt-6">
-              <Text className="font-monda-bold text-xl text-deep-black mb-5">
-                Who are you trading with?
-              </Text>
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="font-monda-bold text-xl text-deep-black">
+                  Who are you trading with?
+                </Text>
+                <TouchableOpacity
+                  onPress={onClose}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <X size={20} color="#6B7280" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
 
               {/* Search bar */}
               <View className="flex-row items-center gap-2 bg-gray-100 rounded-btn px-3.5 mb-3">
@@ -115,6 +123,24 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
+                {/* ── Empty query: show followed users ── */}
+                {!isSearching && following.length > 0 && (
+                  <>
+                    <Text className="font-monda-bold text-[10px] text-gray-400 tracking-widest mb-1.5">
+                      FOLLOWING
+                    </Text>
+                    {following.map(p => (
+                      <UserRow
+                        key={p.id}
+                        id={p.id}
+                        username={p.username}
+                        avatarUrl={p.avatar_url}
+                        onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
+                        card={false}
+                      />
+                    ))}
+                  </>
+                )}
 
                 {!isSearching && following.length === 0 && (
                   <Text className="font-monda text-[13px] text-gray-400 mt-2">
@@ -122,23 +148,25 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
                   </Text>
                 )}
 
-                {/* ── Active search: show results + "not on Pindex" option ── */}
+                {/* ── Active search: results + "not on Pindex" option ── */}
                 {isSearching && results.length > 0 && (
                   <>
                     <Text className="font-monda-bold text-[10px] text-gray-400 tracking-widest mb-1.5">
                       RESULTS
                     </Text>
                     {results.map(p => (
-                      <ProfileRow
+                      <UserRow
                         key={p.id}
-                        profile={p}
+                        id={p.id}
+                        username={p.username}
+                        avatarUrl={p.avatar_url}
                         onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
+                        card={false}
                       />
                     ))}
                   </>
                 )}
 
-                
                 {isSearching && query.trim().length >= 2 && (
                   <TouchableOpacity
                     onPress={() => handle({ type: 'contact', name: query.trim() })}
@@ -152,42 +180,11 @@ export function PartnerModal({ visible, userId, onSelect, onClose }: PartnerModa
                     </Text>
                   </TouchableOpacity>
                 )}
-              
-                <Text className="font-monda-bold text-[10px] text-gray-400 tracking-widest mb-1.5">
-                  FOLLOWING
-                </Text>
-                {following.map(p => (
-                  <ProfileRow
-                    key={p.id}
-                    profile={p}
-                    onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
-                  />
-                ))}
-
               </ScrollView>
             </View>
           </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
-  )
-}
-
-// ── Shared profile row ────────────────────────────────────────────────────────
-function ProfileRow({ profile, onPress }: { profile: ProfileResult; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className="flex-row items-center gap-2.5 py-3 px-1 border-b border-gray-100"
-    >
-      <View className="w-8 h-8 rounded-full bg-deep-black items-center justify-center">
-        <Text className="font-monda-bold text-[13px] text-white">
-          {profile.username.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <Text className="font-monda text-sm text-deep-black">
-        @{profile.username}
-      </Text>
-    </TouchableOpacity>
   )
 }
