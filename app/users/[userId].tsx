@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl, Image } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft } from 'lucide-react-native'
@@ -19,6 +19,7 @@ export default function UserProfileScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const [username, setUsername] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [wantToTradePins, setWantToTradePins] = useState<PinItem[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -29,7 +30,7 @@ export default function UserProfileScreen() {
     if (!userId) return
     const myId = session!.user.id
     const [profileRes, pinsRes, followRes] = await Promise.all([
-      supabase.from('profiles').select('username').eq('id', userId).single(),
+      supabase.from('profiles').select('username, avatar_url').eq('id', userId).single(),
       supabase
         .from('user_pins')
         .select('*, pin:pins(*, organization:organizations(name, logo_url))')
@@ -37,7 +38,10 @@ export default function UserProfileScreen() {
         .eq('want_to_trade', true),
       supabase.from('follows').select('follower_id').eq('follower_id', myId).eq('following_id', userId).maybeSingle(),
     ])
-    if (profileRes.data) setUsername(profileRes.data.username)
+    if (profileRes.data) {
+      setUsername(profileRes.data.username)
+      setAvatarUrl(profileRes.data.avatar_url ?? null)
+    }
     if (pinsRes.data) setWantToTradePins(pinsRes.data as PinItem[])
     setIsFollowing(!!followRes.data)
     setLoading(false)
@@ -75,6 +79,25 @@ export default function UserProfileScreen() {
         <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
         <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
       </TouchableOpacity>
+
+      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{ width: 72, height: 72, borderRadius: 36 }}
+          />
+        ) : (
+          <View style={{
+            width: 72, height: 72, borderRadius: 36,
+            backgroundColor: Colors.deepBlack,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: '#fff' }}>
+              {username.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+      </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
         <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack }}>@{username}</Text>

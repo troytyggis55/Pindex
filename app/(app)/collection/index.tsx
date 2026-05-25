@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Image } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Plus, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
@@ -10,7 +10,7 @@ import type { UserPin, Pin, Trade, TradeItem, Organization } from '@/types'
 
 type Tab = 'pins' | 'trades' | 'following'
 type CollectionItem = UserPin & { pin: Pin & { organization: Organization | null } }
-type Profile = { id: string; username: string }
+type Profile = { id: string; username: string; avatar_url: string | null }
 type ContactRow = { id: string; name: string }
 type TradeWithDetails = Trade & {
   initiator: Profile
@@ -29,7 +29,7 @@ const TABS: { key: Tab; label: string }[] = [
 const TAB_BAR_BOTTOM_OFFSET = 84
 
 export default function PersonalScreen() {
-  const { session } = useAuth()
+  const { session, profile } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('pins')
   const [pins, setPins] = useState<CollectionItem[]>([])
@@ -60,7 +60,7 @@ export default function PersonalScreen() {
         .order('confirmed_at', { ascending: false, nullsFirst: true }),
       supabase
         .from('follows')
-        .select('following_id, profile:profiles!following_id(id, username)')
+        .select('following_id, profile:profiles!following_id(id, username, avatar_url)')
         .eq('follower_id', myId),
     ])
     if (pinsRes.data) setPins(pinsRes.data as CollectionItem[])
@@ -110,13 +110,20 @@ export default function PersonalScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Personal</Text>
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            <View style={{
-              width: 40, height: 40, borderRadius: 20,
-              backgroundColor: Colors.deepBlack,
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>{initial}</Text>
-            </View>
+            {profile?.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+              />
+            ) : (
+              <View style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: Colors.deepBlack,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>{initial}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -319,15 +326,22 @@ export default function PersonalScreen() {
               gap: 12,
             }}>
               <TouchableOpacity onPress={() => router.push(`/users/${item.following_id}`)}>
-                <View style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: Colors.deepBlack,
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
-                    {item.profile.username.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                {item.profile.avatar_url ? (
+                  <Image
+                    source={{ uri: item.profile.avatar_url }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                  />
+                ) : (
+                  <View style={{
+                    width: 40, height: 40, borderRadius: 20,
+                    backgroundColor: Colors.deepBlack,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
+                      {item.profile.username.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push(`/users/${item.following_id}`)} style={{ flex: 1 }}>
                 <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl, Image } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { Search, Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
@@ -11,7 +11,7 @@ import type { Pin, Organization } from '@/types'
 
 type Tab = 'pins' | 'orgs' | 'users'
 type PinWithOrg = Pin & { organization: Organization | null }
-type ProfileRow = { id: string; username: string }
+type ProfileRow = { id: string; username: string; avatar_url: string | null }
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pins', label: 'Pins' },
@@ -38,7 +38,7 @@ export default function ExploreScreen() {
     const [pinsRes, orgsRes, usersRes, followsRes] = await Promise.all([
       supabase.from('pins').select('*, organization:organizations(*)').order('created_at', { ascending: false }),
       supabase.from('organizations').select('*').order('name'),
-      supabase.from('profiles').select('id, username').neq('id', myId).order('username'),
+      supabase.from('profiles').select('id, username, avatar_url').neq('id', myId).order('username'),
       supabase.from('follows').select('following_id').eq('follower_id', myId),
     ])
     if (pinsRes.data) setPins(pinsRes.data as PinWithOrg[])
@@ -238,15 +238,22 @@ export default function ExploreScreen() {
               }}>
                 {/* Avatar */}
                 <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)}>
-                  <View style={{
-                    width: 40, height: 40, borderRadius: 20,
-                    backgroundColor: Colors.deepBlack,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
-                      {item.username.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  {item.avatar_url ? (
+                    <Image
+                      source={{ uri: item.avatar_url }}
+                      style={{ width: 40, height: 40, borderRadius: 20 }}
+                    />
+                  ) : (
+                    <View style={{
+                      width: 40, height: 40, borderRadius: 20,
+                      backgroundColor: Colors.deepBlack,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 16, color: '#fff' }}>
+                        {item.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => router.push(`/users/${item.id}`)} style={{ flex: 1 }}>
