@@ -7,11 +7,9 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { Colors, Radius, Spacing } from '@/constants/theme'
-import type { UserPin, Pin } from '@/types'
+import type { CollectionItem } from '@/types'
 
-type OrgSnap = { name: string; logo_url: string | null }
-type PinWithOrg = Pin & { organization: OrgSnap | null }
-type PinItem = UserPin & { pin: PinWithOrg }
+type PinItem = CollectionItem
 
 export default function UserProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>()

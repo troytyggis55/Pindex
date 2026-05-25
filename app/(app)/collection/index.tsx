@@ -7,19 +7,9 @@ import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
-import type { UserPin, Pin, Trade, TradeItem, Organization } from '@/types'
+import type { CollectionItem, TradeWithDetails, FollowingUser } from '@/types'
 
 type Tab = 'pins' | 'trades' | 'following'
-type CollectionItem = UserPin & { pin: Pin & { organization: Organization | null } }
-type Profile = { id: string; username: string; avatar_url: string | null }
-type ContactRow = { id: string; name: string }
-type TradeWithDetails = Trade & {
-  initiator: Profile
-  receiver_profile: Profile | null
-  receiver_contact: ContactRow | null
-  trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
-}
-type FollowingUser = { following_id: string; profile: Profile }
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pins', label: 'My Pins' },

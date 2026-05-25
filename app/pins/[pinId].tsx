@@ -10,11 +10,8 @@ import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
-import type { Pin, Organization, UserPin } from '@/types'
+import type { PinWithOrg, UserPinFlags, WantToTrader } from '@/types'
 
-type PinWithOrg = Pin & { organization: Organization | null }
-type UserPinFlags = Pick<UserPin, 'id' | 'in_collection' | 'wishlisted' | 'want_to_trade'>
-type WantToTrader = { user_id: string; profile: { username: string } }
 type DetailTab = 'info' | 'details' | 'trade'
 
 const DETAIL_TABS: { key: DetailTab; label: string }[] = [

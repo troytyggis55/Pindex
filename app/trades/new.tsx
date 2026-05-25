@@ -11,14 +11,7 @@ import { useAuth } from '@/context/auth'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import { PinCard } from '@/components/ui/pin-card'
 import { PartnerModal, type Partner } from '@/components/ui/partner-modal'
-
-type TradePinOption = {
-  id: string
-  name: string
-  image_url: string | null
-  organization_id: string | null
-  organization: { id: string; name: string; color: string | null } | null
-}
+import type { TradePinOption } from '@/types'
 
 const BALL_SIZE = 64
 const PIN_CIRCLE = 76
@@ -236,7 +229,8 @@ export default function NewTradeScreen() {
         .select('*, organization:organizations(*)')
         .ilike('name', `%${pinQuery}%`)
         .limit(10)
-        .then(({ data }) => setDbPinResults(data ?? []))
+        // Cast needed: supabase types are stale — `color` exists in DB but not yet in generated types
+        .then(({ data }) => setDbPinResults((data ?? []) as TradePinOption[]))
     }, 300)
     return () => clearTimeout(timer)
   }, [pinQuery, activeSearch])

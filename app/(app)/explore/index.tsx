@@ -8,11 +8,10 @@ import { PinCard } from '@/components/ui/pin-card'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
 import { Colors, Radius, Spacing } from '@/constants/theme'
-import type { Pin, Organization } from '@/types'
+import type { Organization, PinWithOrg, ProfileSnap } from '@/types'
 
 type Tab = 'pins' | 'orgs' | 'users'
-type PinWithOrg = Pin & { organization: Organization | null }
-type ProfileRow = { id: string; username: string; avatar_url: string | null }
+type ProfileRow = ProfileSnap
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'pins', label: 'Pins' },

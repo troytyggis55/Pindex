@@ -17,7 +17,9 @@
       "Bash(xargs grep *)",
       "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__execute_sql",
       "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_migrations",
-      "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_projects"
+      "mcp__c3c3e72d-3e13-4a47-a143-878831ff62b2__list_projects",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\trygv\\\\repos\\\\Pindex\" -Recurse -Force)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
