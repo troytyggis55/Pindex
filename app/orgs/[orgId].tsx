@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
+import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { PinCard } from '@/components/ui/pin-card'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { ScreenHeader } from '@/components/ui/screen-header'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
 
 export default function OrgDetailScreen() {
@@ -35,38 +35,46 @@ export default function OrgDetailScreen() {
   const onRefresh = () => { setRefreshing(true); load() }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
   if (!org) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><Text style={{ fontFamily: 'Monda_400Regular' }}>Organization not found.</Text></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <Text className="font-monda">Organization not found.</Text>
+      </View>
+    )
   }
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      className="flex-1 bg-off-white"
       contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <ScreenHeader onBack={() => router.back()} />
 
       {/* Org header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+      <View className="flex-row items-center gap-3 mb-7">
         <OrgBadge name={org.name} logoUrl={org.logo_url} size={48} />
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack }}>{org.name}</Text>
+        <Text className="font-monda-bold text-[24px] text-deep-black">{org.name}</Text>
       </View>
 
       {/* Pins section */}
-      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, marginBottom: 12 }}>
+      <Text className="font-monda-bold text-[15px] text-deep-black mb-3">
         Pins ({pins.length})
       </Text>
 
       {pins.length === 0 ? (
-        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted }}>No pins yet.</Text>
+        <Text className="font-monda text-gray-500">No pins yet.</Text>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.gridGap }}>
+        <View className="flex-row flex-wrap gap-3">
           {pins.map(pin => (
-            <View key={pin.id} style={{ width: '31%' }}>
+            <View key={pin.id} className="w-[31%]">
               <PinCard
                 id={pin.id}
                 name={pin.name}

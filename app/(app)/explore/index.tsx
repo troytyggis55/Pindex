@@ -8,7 +8,7 @@ import { PinCard } from '@/components/ui/pin-card'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
 import { TabBar } from '@/components/ui/tab-bar'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { Colors, Spacing } from '@/constants/theme'
 import type { Organization, PinWithOrg, ProfileSnap } from '@/types'
 
 type Tab = 'pins' | 'orgs' | 'users'
@@ -71,53 +71,41 @@ export default function ExploreScreen() {
   const filteredUsers = q ? users.filter(u => u.username.toLowerCase().includes(q)) : users
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
   const placeholder = tab === 'pins' ? 'Search pins...' : tab === 'orgs' ? 'Search organizations...' : 'Search users...'
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+    <View className="flex-1 bg-off-white">
       {/* Header */}
-      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Explore</Text>
+      <View className="px-4 pt-4 pb-3">
+        <View className="flex-row justify-between items-center mb-[14px]">
+          <Text className="font-monda-bold text-[28px] text-deep-black">Explore</Text>
           {tab === 'pins' && (
             <TouchableOpacity
               onPress={() => router.push('/pins/new')}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                backgroundColor: Colors.deepBlack,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: Radius.btn,
-              }}
+              className="flex-row items-center gap-1.5 bg-deep-black px-3.5 py-2 rounded-btn"
             >
-              <Plus size={15} color="#fff" strokeWidth={2.5} />
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>New pin</Text>
+              <Plus size={15} color="white" strokeWidth={2.5} />
+              <Text className="font-monda-bold text-[13px] text-white">New pin</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Search bar */}
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: '#f0f0ee',
-          borderRadius: Radius.btn,
-          paddingHorizontal: 12,
-          marginBottom: 12,
-          gap: 8,
-        }}>
+        <View className="flex-row items-center bg-gray-100 rounded-btn px-3 mb-3 gap-2">
           <Search size={16} color={Colors.dark.muted} strokeWidth={2} />
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder={placeholder}
             placeholderTextColor={Colors.dark.muted}
-            style={{ flex: 1, fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack, paddingVertical: 10 }}
+            className="flex-1 font-monda text-sm text-deep-black py-[10px]"
           />
         </View>
 
@@ -140,12 +128,12 @@ export default function ExploreScreen() {
           columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
           contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 16 }}
           ListEmptyComponent={
-            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+            <Text className="font-monda text-gray-500 text-center mt-10">
               No pins found.
             </Text>
           }
           renderItem={({ item }) => (
-            <View style={{ flex: 1 }}>
+            <View className="flex-1">
               <PinCard
                 id={item.id}
                 name={item.name}
@@ -169,24 +157,17 @@ export default function ExploreScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
           ListEmptyComponent={
-            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+            <Text className="font-monda text-gray-500 text-center mt-10">
               No organizations found.
             </Text>
           }
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => router.push(`/orgs/${item.id}`)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                backgroundColor: '#fff',
-                borderRadius: Radius.card,
-                padding: 14,
-              }}
+              className="flex-row items-center gap-3 bg-white rounded-card p-3.5"
             >
               <OrgBadge name={item.name} logoUrl={item.logo_url} size={40} />
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+              <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
                 {item.name}
               </Text>
             </TouchableOpacity>
@@ -203,7 +184,7 @@ export default function ExploreScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
           ListEmptyComponent={
-            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+            <Text className="font-monda text-gray-500 text-center mt-10">
               No users found.
             </Text>
           }

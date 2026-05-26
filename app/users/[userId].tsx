@@ -7,7 +7,7 @@ import { useAuth } from '@/context/auth'
 import { PinCard } from '@/components/ui/pin-card'
 import { Avatar } from '@/components/ui/avatar'
 import { ScreenHeader } from '@/components/ui/screen-header'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { Colors, Spacing } from '@/constants/theme'
 import type { CollectionItem } from '@/types'
 
 type PinItem = CollectionItem
@@ -65,54 +65,51 @@ export default function UserProfileScreen() {
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: Colors.offWhite }}
+      className="flex-1 bg-off-white"
       contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <ScreenHeader onBack={() => router.back()} />
 
-      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+      <View className="items-center mb-5">
         <Avatar url={avatarUrl} username={username} size={72} />
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack }}>@{username}</Text>
+      <View className="flex-row justify-between items-center mb-7">
+        <Text className="font-monda-bold text-[24px] text-deep-black">@{username}</Text>
         <TouchableOpacity
           onPress={toggleFollow}
           disabled={followLoading}
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: Radius.btn,
-            backgroundColor: isFollowing ? 'transparent' : Colors.deepBlack,
-            borderWidth: 1,
-            borderColor: isFollowing ? '#d0d0ce' : Colors.deepBlack,
-          }}
+          className={`px-4 py-2 rounded-btn border ${isFollowing ? 'border-gray-300 bg-transparent' : 'border-deep-black bg-deep-black'}`}
         >
           {followLoading
-            ? <ActivityIndicator color={isFollowing ? Colors.dark.muted : '#fff'} size="small" />
-            : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: isFollowing ? Colors.dark.muted : '#fff' }}>
+            ? <ActivityIndicator color={isFollowing ? Colors.dark.muted : 'white'} size="small" />
+            : <Text className={`font-monda-bold text-[13px] ${isFollowing ? 'text-gray-500' : 'text-white'}`}>
                 {isFollowing ? 'Following' : 'Follow'}
               </Text>
           }
         </TouchableOpacity>
       </View>
 
-      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, marginBottom: 16 }}>
+      <Text className="font-monda-bold text-[15px] text-deep-black mb-4">
         Open to trading ({wantToTradePins.length})
       </Text>
 
       {wantToTradePins.length === 0 ? (
-        <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted }}>No pins listed for trading.</Text>
+        <Text className="font-monda text-gray-500">No pins listed for trading.</Text>
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.gridGap }}>
+        <View className="flex-row flex-wrap gap-3">
           {wantToTradePins.map(item => (
-            <View key={item.id} style={{ width: '31%' }}>
+            <View key={item.id} className="w-[31%]">
               <PinCard
                 id={item.id}
                 name={item.pin.name}
