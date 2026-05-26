@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router'
 import { X, ArrowLeftRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
-import { Colors, Spacing } from '@/constants/theme'
 import { PartnerModal, type Partner } from '@/components/ui/partner-modal'
 import { TradePinCard } from '@/components/ui/trade-pin-card'
 import { AddPinButton } from '@/components/ui/add-pin-button'
@@ -162,7 +161,7 @@ export default function NewTradeScreen() {
   const username = session?.user.email?.split('@')[0] ?? 'You'
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.deepBlack }}>
+    <View className="flex-1 bg-deep-black">
 
       {/* Partner modal — opens immediately on mount, and on name tap */}
       <PartnerModal
@@ -175,81 +174,49 @@ export default function NewTradeScreen() {
       {/* Back button */}
       <TouchableOpacity
         onPress={() => router.back()}
-        style={{
-          position: 'absolute',
-          top: insets.top + 14,
-          left: Spacing.screenPad,
-          zIndex: 30,
-          width: 36, height: 36,
-          borderRadius: 18,
-          backgroundColor: 'rgba(255,255,255,0.08)',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        className="absolute left-4 z-[30] w-9 h-9 rounded-full bg-white/[0.08] items-center justify-center"
+        style={{ top: insets.top + 14 }}
       >
         <X size={17} color="rgba(255,255,255,0.7)" strokeWidth={2.5} />
       </TouchableOpacity>
 
       {/* ── TOP HALF — trading partner ── */}
-      <View style={{
-        flex: 1,
-        paddingTop: insets.top + 64,
-        paddingHorizontal: Spacing.screenPad,
-        paddingBottom: 16,
-      }}>
-        <Text style={{
-          fontFamily: 'Monda_700Bold',
-          fontSize: 10,
-          color: 'rgba(255,255,255,0.55)',
-          letterSpacing: 1.4,
-          marginBottom: 10,
-        }}>
+      <View
+        className="flex-1 px-4 pb-4"
+        style={{ paddingTop: insets.top + 64 }}
+      >
+        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[10px]">
           TRADING PARTNER
         </Text>
 
         {/* Partner name — tap to change */}
         <TouchableOpacity
           onPress={() => setPartnerModalVisible(true)}
-          style={{ marginBottom: 20 }}
+          className="mb-5"
         >
           {partner ? (
             <>
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: '#fff' }}>
+              <Text className="font-monda-bold text-2xl text-white">
                 {partner.type === 'profile' ? `@${partner.name}` : partner.name}
               </Text>
               {partner.type === 'contact' && (
-                <Text style={{
-                  fontFamily: 'Monda_400Regular',
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.45)',
-                  marginTop: 2,
-                }}>
+                <Text className="font-monda text-xs text-white/45 mt-0.5">
                   Not on Pindex
                 </Text>
               )}
             </>
           ) : (
-            <Text style={{
-              fontFamily: 'Monda_400Regular',
-              fontSize: 16,
-              color: 'rgba(255,255,255,0.3)',
-            }}>
+            <Text className="font-monda text-base text-white/30">
               Tap to select trading partner...
             </Text>
           )}
         </TouchableOpacity>
 
-        <Text style={{
-          fontFamily: 'Monda_700Bold',
-          fontSize: 10,
-          color: 'rgba(255,255,255,0.55)',
-          letterSpacing: 1.4,
-          marginBottom: 14,
-        }}>
+        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px]">
           THEIR PINS
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
+          <View className="flex-row gap-4 items-start">
             {receivedPins.map(p => (
               <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'received')} />
             ))}
@@ -262,26 +229,15 @@ export default function NewTradeScreen() {
 
       {/* ── POKEBALL DIVIDER — hidden during pin search ── */}
       {activeSearch === null && (
-        <View style={{ height: BALL_SIZE, alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-          <View style={{
-            position: 'absolute',
-            left: 0, right: 0,
-            height: 1,
-            backgroundColor: 'rgba(255,255,255,0.1)',
-          }} />
+        <View className="h-16 items-center justify-center z-10">
+          <View className="absolute left-0 right-0 h-px bg-white/10" />
           <TouchableOpacity
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}
+            className="w-16 h-16 rounded-full bg-pin-red items-center justify-center border-[3px] border-white/15"
             style={{
-              width: BALL_SIZE, height: BALL_SIZE,
-              borderRadius: BALL_SIZE / 2,
-              backgroundColor: Colors.red,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 3,
-              borderColor: 'rgba(255,255,255,0.15)',
-              shadowColor: Colors.red,
+              shadowColor: '#CD0808',
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.55,
               shadowRadius: 16,
@@ -297,23 +253,15 @@ export default function NewTradeScreen() {
       )}
 
       {/* ── BOTTOM HALF — current user ── */}
-      <View style={{
-        flex: 1,
-        paddingTop: 16,
-        paddingHorizontal: Spacing.screenPad,
-        paddingBottom: insets.bottom + 24,
-      }}>
-        <Text style={{
-          fontFamily: 'Monda_700Bold',
-          fontSize: 10,
-          color: 'rgba(255,255,255,0.55)',
-          letterSpacing: 1.4,
-          marginBottom: 14,
-        }}>
+      <View
+        className="flex-1 pt-4 px-4"
+        style={{ paddingBottom: insets.bottom + 24 }}
+      >
+        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px]">
           YOUR PINS — @{username}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 16, alignItems: 'flex-start' }}>
+          <View className="flex-row gap-4 items-start">
             {gavePins.map(p => (
               <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'gave')} />
             ))}
@@ -326,13 +274,7 @@ export default function NewTradeScreen() {
 
       {/* ── PIN SEARCH OVERLAY ── */}
       {activeSearch !== null && (
-        <View style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,14,25,0.75)',
-          justifyContent: 'center',
-          paddingHorizontal: Spacing.screenPad,
-        }}>
+        <View className="absolute inset-0 bg-deep-black/75 justify-center px-4">
           <PinSearch
             query={pinQuery}
             collectionMatches={collectionMatches}

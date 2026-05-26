@@ -9,7 +9,7 @@ import { StatusChipRow } from '@/components/ui/status-chip'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
 import { TabBar } from '@/components/ui/tab-bar'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { Colors } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
 import type { PinWithOrg, UserPinFlags, WantToTrader } from '@/types'
 
@@ -87,11 +87,19 @@ export default function PinDetailScreen() {
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
   if (!pin) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><Text style={{ fontFamily: 'Monda_400Regular' }}>Pin not found</Text></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <Text className="font-monda">Pin not found</Text>
+      </View>
+    )
   }
 
   const orgColor = Colors.orgFallback // future: pin.organization?.color
@@ -101,66 +109,42 @@ export default function PinDetailScreen() {
     (pin.org_claimed_at !== null && pin.organization?.admin_user_id === session?.user.id)
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+    <View className="flex-1 bg-off-white">
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1"
         contentContainerStyle={{ paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         stickyHeaderIndices={[0]}
       >
         {/* Full-bleed colored header */}
         <View style={{ height: HEADER_HEIGHT, backgroundColor: orgColor }}>
+
           {/* Back button */}
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{
-              position: 'absolute',
-              top: insets.top + 16,
-              left: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              backgroundColor: 'rgba(0,0,0,0.2)',
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: Radius.btn,
-            }}
+            className="absolute left-4 flex-row items-center gap-1 bg-black/20 px-3 py-1.5 rounded-btn"
+            style={{ top: insets.top + 16 }}
           >
             <ChevronLeft size={16} color="#fff" strokeWidth={2.5} />
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Back</Text>
+            <Text className="font-monda-bold text-[13px] text-white">Back</Text>
           </TouchableOpacity>
 
           {/* Top-right: edit button (for owner) or unverified badge */}
           {canEdit ? (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/pins/new', params: { pinId } })}
-              style={{
-                position: 'absolute',
-                top: insets.top + 16,
-                right: 16,
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: Radius.btn,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-              }}
+              className="absolute right-4 bg-black/30 px-2.5 py-1.5 rounded-btn flex-row items-center gap-[5px]"
+              style={{ top: insets.top + 16 }}
             >
               <Pencil size={12} color="#fff" strokeWidth={2.5} />
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: '#fff' }}>Edit</Text>
+              <Text className="font-monda-bold text-[11px] text-white">Edit</Text>
             </TouchableOpacity>
           ) : !pin.organization_id ? (
-            <View style={{
-              position: 'absolute',
-              top: insets.top + 16,
-              right: 16,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: Radius.btn,
-            }}>
-              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 11, color: '#fff' }}>Unverified</Text>
+            <View
+              className="absolute right-4 bg-black/30 px-2.5 py-1 rounded-btn"
+              style={{ top: insets.top + 16 }}
+            >
+              <Text className="font-monda text-[11px] text-white">Unverified</Text>
             </View>
           ) : null}
 
@@ -168,15 +152,11 @@ export default function PinDetailScreen() {
           {pin.image_url ? (
             <Image
               source={{ uri: pin.image_url }}
+              className="absolute self-center bottom-[-30px] border-4 border-white/60"
               style={{
-                position: 'absolute',
-                bottom: -30,
-                alignSelf: 'center',
                 width: 120,
                 height: 120,
                 borderRadius: 60,
-                borderWidth: 4,
-                borderColor: 'rgba(255,255,255,0.6)',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.3,
@@ -185,20 +165,11 @@ export default function PinDetailScreen() {
               resizeMode="cover"
             />
           ) : (
-            <View style={{
-              position: 'absolute',
-              bottom: -30,
-              alignSelf: 'center',
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              backgroundColor: 'rgba(255,255,255,0.25)',
-              borderWidth: 4,
-              borderColor: 'rgba(255,255,255,0.4)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 36, color: 'rgba(255,255,255,0.6)' }}>
+            <View
+              className="absolute self-center bottom-[-30px] border-4 border-white/40 items-center justify-center bg-white/25"
+              style={{ width: 120, height: 120, borderRadius: 60 }}
+            >
+              <Text className="font-monda-bold text-[36px] text-white/60">
                 {pin.name.charAt(0)}
               </Text>
             </View>
@@ -206,16 +177,16 @@ export default function PinDetailScreen() {
         </View>
 
         {/* Content area */}
-        <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 44 }}>
+        <View className="px-4 pt-11">
           {/* Org badge + pin name */}
-          <View style={{ alignItems: 'center', marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <View className="items-center mb-5">
+            <View className="flex-row items-center gap-1.5 mb-2">
               <OrgBadge name={orgName} logoUrl={pin.organization?.logo_url} size={20} />
-              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 13, color: Colors.dark.muted }}>
+              <Text className="font-monda text-[13px] text-gray-500">
                 {orgName}
               </Text>
             </View>
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 24, color: Colors.deepBlack, textAlign: 'center' }}>
+            <Text className="font-monda-bold text-2xl text-deep-black text-center">
               {pin.name}
             </Text>
           </View>
@@ -230,37 +201,37 @@ export default function PinDetailScreen() {
 
           {/* Tab content */}
           {detailTab === 'info' && (
-            <View style={{ gap: 12 }}>
+            <View className="gap-3">
               {pin.description ? (
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack, lineHeight: 22 }}>
+                <Text className="font-monda text-sm text-deep-black leading-[22px]">
                   {pin.description}
                 </Text>
               ) : (
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                <Text className="font-monda text-sm text-gray-500">
                   No description available.
                 </Text>
               )}
               {pin.edition_size && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>Edition size</Text>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>{pin.edition_size}</Text>
+                <View className="flex-row justify-between">
+                  <Text className="font-monda text-sm text-gray-500">Edition size</Text>
+                  <Text className="font-monda-bold text-sm text-deep-black">{pin.edition_size}</Text>
                 </View>
               )}
             </View>
           )}
 
           {detailTab === 'details' && (
-            <View style={{ gap: 12 }}>
+            <View className="gap-3">
               {pin.released_at && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>Released</Text>
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>
+                <View className="flex-row justify-between">
+                  <Text className="font-monda text-sm text-gray-500">Released</Text>
+                  <Text className="font-monda-bold text-sm text-deep-black">
                     {new Date(pin.released_at).toLocaleDateString()}
                   </Text>
                 </View>
               )}
               {!pin.released_at && (
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                <Text className="font-monda text-sm text-gray-500">
                   No details available.
                 </Text>
               )}
@@ -268,16 +239,16 @@ export default function PinDetailScreen() {
           )}
 
           {detailTab === 'trade' && (
-            <View style={{ gap: 10 }}>
+            <View className="gap-[10px]">
               {traders.length === 0 ? (
-                <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+                <Text className="font-monda text-sm text-gray-500">
                   No one is currently looking to trade this pin.
                 </Text>
               ) : (
                 <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <View className="flex-row items-center gap-1.5 mb-1">
                     <Users size={14} color={Colors.dark.muted} strokeWidth={2} />
-                    <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted }}>
+                    <Text className="font-monda-bold text-[13px] text-gray-500">
                       {traders.length} {traders.length === 1 ? 'person' : 'people'} want to trade this
                     </Text>
                   </View>
@@ -298,17 +269,7 @@ export default function PinDetailScreen() {
       </ScrollView>
 
       {/* Action bar — fixed at bottom */}
-      <View style={{
-        position: 'absolute',
-        bottom: TAB_BAR_BOTTOM_OFFSET,
-        left: 0,
-        right: 0,
-        backgroundColor: Colors.offWhite,
-        borderTopWidth: 1,
-        borderTopColor: '#e8e8e6',
-        paddingHorizontal: Spacing.screenPad,
-        paddingVertical: 12,
-      }}>
+      <View className="absolute bottom-[84px] left-0 right-0 bg-off-white border-t border-t-[#e8e8e6] px-4 py-3">
         {userPin ? (
           <StatusChipRow
             in_collection={userPin.in_collection}
@@ -320,16 +281,11 @@ export default function PinDetailScreen() {
           <TouchableOpacity
             onPress={addToCollection}
             disabled={adding}
-            style={{
-              backgroundColor: Colors.deepBlack,
-              paddingVertical: 14,
-              borderRadius: Radius.btn,
-              alignItems: 'center',
-            }}
+            className="bg-deep-black py-[14px] rounded-btn items-center"
           >
             {adding
               ? <ActivityIndicator color="#fff" />
-              : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#fff' }}>Add to collection</Text>
+              : <Text className="font-monda-bold text-sm text-white">Add to collection</Text>
             }
           </TouchableOpacity>
         )}
