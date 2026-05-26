@@ -9,7 +9,7 @@ import { pickAndUpload } from '@/lib/upload'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { Avatar } from '@/components/ui/avatar'
 import { ScreenHeader } from '@/components/ui/screen-header'
-import { Colors, Radius, Spacing } from '@/constants/theme'
+import { Colors } from '@/constants/theme'
 import type { Organization } from '@/types'
 
 export default function ProfileScreen() {
@@ -85,10 +85,9 @@ export default function ProfileScreen() {
   }
 
   const username = profile?.username ?? '?'
-  const initial = username.charAt(0).toUpperCase()
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite, paddingTop: insets.top }}>
+    <View className="flex-1 bg-off-white" style={{ paddingTop: insets.top }}>
       {/* Header */}
       <ScreenHeader
         title="Profile"
@@ -96,19 +95,16 @@ export default function ProfileScreen() {
         className="px-4 pt-4"
       />
 
-      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 24, gap: 24 }}>
+      <View className="px-4 pt-6 gap-6">
         {/* Avatar */}
-        <View style={{ alignItems: 'center', gap: 12 }}>
+        <View className="items-center gap-3">
           <TouchableOpacity onPress={handleAvatarUpload} disabled={uploadingAvatar} activeOpacity={0.8}>
-            <View style={{ position: 'relative' }}>
+            <View className="relative">
               <Avatar url={profile?.avatar_url} username={username} size={80} />
-              <View style={{
-                position: 'absolute', bottom: 0, right: 0,
-                width: 26, height: 26, borderRadius: 13,
-                backgroundColor: Colors.offWhite,
-                borderWidth: 1.5, borderColor: '#e0e0de',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
+              <View
+                className="absolute bottom-0 right-0 w-[26px] h-[26px] rounded-full bg-off-white border-gray-200 items-center justify-center"
+                style={{ borderWidth: 1.5 }}
+              >
                 {uploadingAvatar
                   ? <ActivityIndicator size="small" color={Colors.deepBlack} />
                   : <Camera size={13} color={Colors.deepBlack} strokeWidth={2} />
@@ -116,53 +112,41 @@ export default function ProfileScreen() {
               </View>
             </View>
           </TouchableOpacity>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 18, color: Colors.deepBlack }}>@{username}</Text>
+          <Text className="font-monda-bold text-lg text-deep-black">@{username}</Text>
         </View>
 
-        {hasCreatedPins && <TouchableOpacity
+        {hasCreatedPins && (
+          <TouchableOpacity
             onPress={() => router.push('/admin/created-pins')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#fff',
-              borderRadius: Radius.btn,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              marginBottom: 14,
-              gap: 8,
-            }}
-        >
-
-          <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
-            Pins I've created
-          </Text>
-          <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
-        </TouchableOpacity>}
+            className="flex-row items-center bg-white rounded-btn px-3.5 py-2.5 mb-3.5 gap-2"
+          >
+            <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
+            <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
+              Pins I've created
+            </Text>
+            <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
 
         {/* Admin orgs */}
         {loadingOrgs ? (
           <ActivityIndicator />
         ) : adminOrgs.length > 0 ? (
-          <View style={{ gap: 8 }}>
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted, letterSpacing: 0.5 }}>
+          <View className="gap-2">
+            <Text
+              className="font-monda-bold text-[13px] text-gray-500"
+              style={{ letterSpacing: 0.5 }}
+            >
               MY ORGANIZATIONS
             </Text>
             {adminOrgs.map(org => (
               <TouchableOpacity
                 key={org.id}
                 onPress={() => router.push(`/admin/${org.id}`)}
-                style={{
-                  backgroundColor: '#fff',
-                  borderRadius: Radius.card,
-                  padding: 14,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
+                className="bg-white rounded-card p-3.5 flex-row items-center gap-3"
               >
                 <OrgBadge name={org.name} logoUrl={org.logo_url} size={36} />
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack, flex: 1 }}>
+                <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
                   {org.name}
                 </Text>
                 <ChevronRight size={16} color={Colors.dark.muted} strokeWidth={2} />
@@ -171,34 +155,20 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
-
-
-
         {/* Actions */}
-        <View style={{ gap: 10, marginTop: 8 }}>
+        <View className="gap-2.5 mt-2">
           <TouchableOpacity
             onPress={handleSignOut}
-            style={{
-              borderWidth: 1,
-              borderColor: '#d0d0ce',
-              borderRadius: Radius.btn,
-              padding: 14,
-              alignItems: 'center',
-            }}
+            className="border border-gray-300 rounded-btn p-3.5 items-center"
           >
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.dark.muted }}>Log out</Text>
+            <Text className="font-monda-bold text-sm text-gray-500">Log out</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleDeleteAccount}
-            style={{
-              borderRadius: Radius.btn,
-              padding: 14,
-              alignItems: 'center',
-              backgroundColor: '#fee2e2',
-            }}
+            className="rounded-btn p-3.5 items-center bg-red-100"
           >
-            <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: '#dc2626' }}>Delete account</Text>
+            <Text className="font-monda-bold text-sm text-red-600">Delete account</Text>
           </TouchableOpacity>
         </View>
       </View>

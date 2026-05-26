@@ -9,7 +9,7 @@ import { UserRow } from '@/components/ui/user-row'
 import { Avatar } from '@/components/ui/avatar'
 import { TabBar } from '@/components/ui/tab-bar'
 import { TradeCard } from '@/components/ui/trade-card'
-import { Colors, Spacing } from '@/constants/theme'
+import { Spacing } from '@/constants/theme'
 import type { CollectionItem, TradeWithDetails, FollowingUser } from '@/types'
 
 type Tab = 'pins' | 'trades' | 'following'
@@ -89,20 +89,19 @@ export default function PersonalScreen() {
   }
 
   const username = session?.user.email?.split('@')[0] ?? '?'
-  const initial = username.charAt(0).toUpperCase()
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return <View className="flex-1 justify-center items-center bg-off-white"><ActivityIndicator /></View>
   }
 
   const refreshControl = <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+    <View className="flex-1 bg-off-white">
       {/* Header */}
-      <View style={{ paddingHorizontal: Spacing.screenPad, paddingTop: 16, paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 28, color: Colors.deepBlack }}>Personal</Text>
+      <View className="px-4 pt-4 pb-3">
+        <View className="flex-row justify-between items-center mb-3">
+          <Text className="font-monda-bold text-[28px] text-deep-black">Personal</Text>
           <TouchableOpacity onPress={() => router.push('/profile')}>
             <Avatar url={profile?.avatar_url} username={profile?.username ?? username} size={40} />
           </TouchableOpacity>
@@ -119,7 +118,7 @@ export default function PersonalScreen() {
 
       {/* My Pins */}
       {tab === 'pins' && (
-        <View style={{ flex: 1 }}>
+        <View className="flex-1">
           <FlatList
             data={pins}
             numColumns={3}
@@ -128,7 +127,7 @@ export default function PersonalScreen() {
             columnWrapperStyle={{ gap: Spacing.gridGap, paddingHorizontal: Spacing.screenPad }}
             contentContainerStyle={{ paddingTop: 24, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 80, gap: 16 }}
             ListEmptyComponent={
-              <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+              <Text className="font-monda text-gray-500 text-center mt-10">
                 No pins yet — browse Explore to add some!
               </Text>
             }
@@ -155,16 +154,9 @@ export default function PersonalScreen() {
           {/* Floating add button */}
           <TouchableOpacity
             onPress={() => router.push('/(app)/explore')}
+            className="absolute right-4 w-[52px] h-[52px] rounded-full bg-deep-black items-center justify-center"
             style={{
-              position: 'absolute',
               bottom: TAB_BAR_BOTTOM_OFFSET + 16,
-              right: Spacing.screenPad,
-              width: 52,
-              height: 52,
-              borderRadius: 26,
-              backgroundColor: Colors.deepBlack,
-              alignItems: 'center',
-              justifyContent: 'center',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.25,
@@ -172,7 +164,7 @@ export default function PersonalScreen() {
               elevation: 6,
             }}
           >
-            <Plus size={22} color="#fff" strokeWidth={2.5} />
+            <Plus size={22} color="white" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
       )}
@@ -190,12 +182,15 @@ export default function PersonalScreen() {
             refreshControl={refreshControl}
             contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
             ListHeaderComponent={pendingConfirmation.length > 0 ? (
-              <View style={{ marginBottom: 16 }}>
-                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted, marginBottom: 8, letterSpacing: 0.5 }}>
+              <View className="mb-4">
+                <Text
+                  className="font-monda-bold text-[13px] text-gray-500 mb-2"
+                  style={{ letterSpacing: 0.5 }}
+                >
                   AWAITING YOUR CONFIRMATION ({pendingConfirmation.length})
                 </Text>
                 {pendingConfirmation.map(t => (
-                  <View key={t.id} style={{ marginBottom: 10 }}>
+                  <View key={t.id} className="mb-2.5">
                     <TradeCard
                       trade={t}
                       currentUserId={myId}
@@ -205,14 +200,17 @@ export default function PersonalScreen() {
                   </View>
                 ))}
                 {myTrades.length > 0 && (
-                  <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.dark.muted, marginTop: 8, marginBottom: 0, letterSpacing: 0.5 }}>
+                  <Text
+                    className="font-monda-bold text-[13px] text-gray-500 mt-2"
+                    style={{ letterSpacing: 0.5 }}
+                  >
                     MY TRADES
                   </Text>
                 )}
               </View>
             ) : null}
             ListEmptyComponent={pendingConfirmation.length === 0
-              ? <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>No trades recorded yet.</Text>
+              ? <Text className="font-monda text-gray-500 text-center mt-10">No trades recorded yet.</Text>
               : null
             }
             renderItem={({ item }) => (
@@ -234,7 +232,7 @@ export default function PersonalScreen() {
           refreshControl={refreshControl}
           contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
           ListEmptyComponent={
-            <Text style={{ fontFamily: 'Monda_400Regular', color: Colors.dark.muted, textAlign: 'center', marginTop: 40 }}>
+            <Text className="font-monda text-gray-500 text-center mt-10">
               Not following anyone yet.
             </Text>
           }
