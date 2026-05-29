@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity } from 'react-native'
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated'
 import { X, Search } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { ModalCard } from '@/components/ui/modal-card'
@@ -57,6 +58,9 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
     return () => clearTimeout(timer)
   }, [query, userId])
 
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({ paddingBottom: keyboard.height.value }))
+
   const handle = (p: Partner) => { onSelect(p); onClose() }
   const isSearching = query.length > 0
 
@@ -90,7 +94,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
           )}
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Animated.ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={keyboardStyle}>
           {!isSearching && following.length > 0 && (
             <>
               <Text className="font-monda-bold text-[10px] text-gray-400 tracking-widest mb-1.5">
@@ -142,7 +146,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
               <Text className="font-monda text-xs text-gray-400">Not on Pindex</Text>
             </TouchableOpacity>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
       </View>
     </ModalCard>
   )

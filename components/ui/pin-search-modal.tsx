@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import Animated, { useAnimatedStyle } from 'react-native-reanimated'
+import { useAnimatedKeyboard } from 'react-native-keyboard-controller';
 import { Search, Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { ModalCard } from '@/components/ui/modal-card'
@@ -66,6 +68,9 @@ export function PinSearchModal({ visible, userId, onSelect, onCancel }: PinSearc
     onSelect(data as TradePinOption)
   }
 
+  const keyboard = useAnimatedKeyboard()
+  const keyboardStyle = useAnimatedStyle(() => ({ paddingBottom: keyboard.height.value }))
+
   const q = query.trim().toLowerCase()
   const collectionIds = new Set(collection.map(p => p.id))
   const collectionMatches = q ? collection.filter(p => p.name.toLowerCase().includes(q)) : collection
@@ -106,7 +111,7 @@ export function PinSearchModal({ visible, userId, onSelect, onCancel }: PinSearc
         </TouchableOpacity>
       </View>
 
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingVertical: 16 }}>
+      <Animated.ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[{ paddingVertical: 16 }, keyboardStyle]}>
         {/* Collection section */}
         {collectionMatches.length > 0 && (
           <>
@@ -158,7 +163,7 @@ export function PinSearchModal({ visible, userId, onSelect, onCancel }: PinSearc
             No pins found — create one above.
           </Text>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </ModalCard>
   )
 }
