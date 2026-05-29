@@ -6,15 +6,18 @@ import {
 import { ScrollView } from "react-native-gesture-handler"
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ChevronLeft, Camera } from 'lucide-react-native'
-import ColorPicker, { Panel1, HueSlider, Preview } from 'reanimated-color-picker'
+import { ChevronLeft, Camera, Pencil, RotateCcw } from 'lucide-react-native'
+import ColorPicker, { Panel1, HueSlider } from 'reanimated-color-picker'
 import { supabase } from '@/lib/supabase'
 import { pickAndUpload } from '@/lib/upload'
 import { useAuth } from '@/context/auth'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { PinCard } from '@/components/ui/pin-card'
+import { getContrastColor } from '@/lib/color'
 import { Colors, Radius, Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
+
+const HEX_RE = /^#(?:[0-9a-fA-F]{3}){1,2}$/
 
 type PendingClaim = {
   id: string
@@ -43,7 +46,11 @@ export default function OrgAdminScreen() {
   const [savingName, setSavingName] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [selectedColor, setSelectedColor] = useState<string>(Colors.orgFallback)
+  const [savedColor, setSavedColor] = useState<string>(Colors.orgFallback)
+  const [hexInput, setHexInput] = useState<string>(Colors.orgFallback)
   const [savingColor, setSavingColor] = useState(false)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false)
+  const [colorPickerKey, setColorPickerKey] = useState(0)
 
   const [transferUsername, setTransferUsername] = useState('')
   const [transferCandidate, setTransferCandidate] = useState<{ id: string; username: string } | null>(null)
@@ -72,7 +79,10 @@ export default function OrgAdminScreen() {
     if (orgRes.data) {
       setOrg(orgRes.data)
       setOrgName(orgRes.data.name)
-      setSelectedColor(orgRes.data.color ?? Colors.orgFallback)
+      const color = orgRes.data.color ?? Colors.orgFallback
+      setSelectedColor(color)
+      setSavedColor(color)
+      setHexInput(color)
     }
     if (pinsRes.data) setPins(pinsRes.data)
     if (claimsRes.data) setPendingClaims(claimsRes.data as PendingClaim[])
@@ -105,12 +115,20 @@ export default function OrgAdminScreen() {
     }
   }
 
-  const saveColor = async (hex: string) => {
+  const saveColor = async () => {
     setSavingColor(true)
-    const { error } = await supabase.from('organizations').update({ color: hex }).eq('id', orgId)
+    const { error } = await supabase.from('organizations').update({ color: selectedColor }).eq('id', orgId)
     setSavingColor(false)
-    if (error) Alert.alert('Error', error.message)
-    else setOrg(prev => prev ? { ...prev, color: hex } : prev)
+    if (error) { Alert.alert('Error', error.message); return }
+    setSavedColor(selectedColor)
+    setOrg(prev => prev ? { ...prev, color: selectedColor } : prev)
+    setColorPickerOpen(false)
+  }
+
+  const undoColor = () => {
+    setSelectedColor(savedColor)
+    setHexInput(savedColor)
+    setColorPickerKey(k => k + 1)
   }
 
   const saveName = async () => {
@@ -284,24 +302,88 @@ export default function OrgAdminScreen() {
       </View>
 
       {/* Brand color */}
-      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>
-        Brand color
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 8 }}>
+        Organization color
       </Text>
       <View style={{ marginBottom: 32 }}>
-        <ColorPicker
-          value={selectedColor}
-          onChangeJS={({ hex }) => setSelectedColor(hex)}
-          onCompleteJS={({ hex }) => saveColor(hex)}
-        >
-          <Preview style={{ marginBottom: 12, borderRadius: Radius.btn }} />
-          <Panel1 style={{ marginBottom: 12, borderRadius: Radius.card }} />
-          <HueSlider style={{ borderRadius: Radius.btn }} />
-        </ColorPicker>
-        {savingColor && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-            <ActivityIndicator size="small" color={Colors.dark.muted} />
-            <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted }}>Saving…</Text>
-          </View>
+        {/* Swatch row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: colorPickerOpen ? 14 : 0 }}>
+          <TouchableOpacity
+            onPress={() => setColorPickerOpen(o => !o)}
+            activeOpacity={0.8}
+          >
+            <View style={{
+              width: 44, height: 44, borderRadius: Radius.btn,
+              backgroundColor: selectedColor,
+              borderWidth: 1, borderColor: '#d0d0ce',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Pencil size={16} color={getContrastColor(selectedColor)} strokeWidth={2} />
+            </View>
+          </TouchableOpacity>
+
+          <TextInput
+            value={hexInput}
+            onChangeText={text => {
+              setHexInput(text)
+              if (HEX_RE.test(text)) {
+                setSelectedColor(text)
+                setColorPickerKey(k => k + 1)
+              }
+            }}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={7}
+            placeholderTextColor={Colors.dark.muted}
+            style={{
+              flex: 1,
+              fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
+              borderWidth: 1,
+              borderColor: HEX_RE.test(hexInput) ? '#d0d0ce' : '#dc2626',
+              borderRadius: Radius.btn, padding: 10, backgroundColor: '#fff',
+            }}
+          />
+
+          {selectedColor.toLowerCase() !== savedColor.toLowerCase() && (
+            <>
+              <TouchableOpacity
+                onPress={undoColor}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  borderWidth: 1, borderColor: '#d0d0ce',
+                  borderRadius: Radius.btn, paddingHorizontal: 10, paddingVertical: 7,
+                }}
+              >
+                <RotateCcw size={12} color={Colors.deepBlack} strokeWidth={2} />
+                <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 12, color: Colors.deepBlack }}>Undo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={saveColor}
+                disabled={savingColor}
+                style={{
+                  backgroundColor: Colors.deepBlack,
+                  borderRadius: Radius.btn, paddingHorizontal: 14, paddingVertical: 7,
+                  alignItems: 'center', minWidth: 56,
+                }}
+              >
+                {savingColor
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 12, color: '#fff' }}>Save</Text>
+                }
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {colorPickerOpen && (
+          <ColorPicker
+            key={colorPickerKey}
+            value={selectedColor}
+            onChangeJS={({ hex }) => { setSelectedColor(hex); setHexInput(hex) }}
+          >
+            <Panel1 style={{ marginBottom: 12, borderRadius: Radius.card }} />
+            <HueSlider style={{ borderRadius: Radius.btn }} />
+          </ColorPicker>
         )}
       </View>
 

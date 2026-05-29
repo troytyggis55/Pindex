@@ -16,7 +16,7 @@ These are non-negotiable. Apply them to every change, new or existing code.
 ### Styling — NativeWind first
 
 - **`className` is the default. `style={}` is the exception.** Write `className="flex-1 bg-off-white px-4"`, not `style={{ flex: 1, backgroundColor: '#FFFFFA', paddingHorizontal: 16 }}`.
-- **`constants/theme.ts` values are for dynamic styles only** — org colors from the DB, runtime-computed values. Static design-token values (spacing, brand colors, radii) must use Tailwind classes.
+- **`constants/theme.ts` values are for dynamic styles only** — org colors from the DB, runtime-computed values. Static design-token values (spacing, org colors, radii) must use Tailwind classes.
 - **No raw hex strings in JSX.** If a color isn't a dynamic DB value, it must be a Tailwind class or a `Colors.*` token — never a literal `'#FFFFFA'` or `'rgba(255,255,255,0.3)'` in a style object.
 - **Legitimate `style={}` exceptions:** `shadowColor`/`elevation` keyed off a prop, `hitSlop`, `resizeMode`, and other RN-only properties that have no Tailwind equivalent.
 

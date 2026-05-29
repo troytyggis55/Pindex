@@ -62,7 +62,7 @@ export default function PersonalScreen() {
     if (followingRes.data) setFollowing(followingRes.data as FollowingUser[])
     setLoading(false)
     setRefreshing(false)
-  }, [session?.user.id])
+  }, [])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
 
@@ -137,7 +137,7 @@ export default function PersonalScreen() {
                   id={item.id}
                   name={item.pin.name}
                   imageUrl={item.pin.image_url}
-                  orgName={item.pin.organization?.name ?? 'Independent'}
+                  orgColor={item.pin.organization?.color}
                   orgLogoUrl={item.pin.organization?.logo_url}
                   isConfirmed={item.pin.organization_id != null}
                   flags={{
