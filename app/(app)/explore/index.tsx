@@ -48,7 +48,7 @@ export default function ExploreScreen() {
     if (followsRes.data) setFollowingIds(new Set(followsRes.data.map(f => f.following_id)))
     setLoading(false)
     setRefreshing(false)
-  }, [])
+  }, [session])
 
   useFocusEffect(useCallback(() => { load() }, [load]))
 
@@ -138,7 +138,7 @@ export default function ExploreScreen() {
                 id={item.id}
                 name={item.name}
                 imageUrl={item.image_url}
-                orgName={item.organization?.name ?? 'Independent'}
+                orgColor={item.organization?.color}
                 orgLogoUrl={item.organization?.logo_url}
                 isConfirmed={item.organization_id != null}
                 onPress={() => router.push(`/pins/${item.id}`)}

@@ -1,10 +1,10 @@
 import { TouchableOpacity, View, Text, Image } from 'react-native'
+import { Colors } from '@/constants/theme'
 
 interface PinCardProps {
     id: string
-    name?: string
+    name: string
     imageUrl?: string | null
-    orgName: string
     orgColor?: string | null
     orgLogoUrl?: string | null  // unused — kept for call-site compatibility
     isConfirmed?: boolean
@@ -17,35 +17,14 @@ interface PinCardProps {
 const CIRCLE_SIZE = 76
 const SHADOW_SPACE = 0
 
-// Deterministically maps an org name to a vivid HSV(hue, 1, 1) hex color
-function orgNameToColor(name: string): string {
-    let hash = 0
-    for (let i = 0; i < name.length; i++) {
-        hash = (name.charCodeAt(i) + ((hash << 5) - hash)) | 0
-    }
-    const hue = Math.abs(hash) % 360
-    const h = hue / 60
-    const x = 1 - Math.abs(h % 2 - 1)
-    let r = 0, g = 0, b = 0
-    if (h < 1)      { r = 1; g = x }
-    else if (h < 2) { r = x; g = 1 }
-    else if (h < 3) { g = 1; b = x }
-    else if (h < 4) { g = x; b = 1 }
-    else if (h < 5) { r = x; b = 1 }
-    else            { r = 1; b = x }
-    const hex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0')
-    return `#${hex(r)}${hex(g)}${hex(b)}`
-}
-
 export function PinCard({
     name,
     imageUrl,
-    orgName,
     orgColor,
     isConfirmed = true,
     onPress,
 }: PinCardProps) {
-    const shadowColor = isConfirmed ? (orgColor ?? orgNameToColor(orgName)) : '#9CA3AF'
+    const shadowColor = isConfirmed ? (orgColor ?? Colors.orgFallback) : '#9CA3AF'
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.85} className="items-center">
@@ -76,7 +55,7 @@ export function PinCard({
                         />
                     ) : (
                         <Text className="font-monda-bold text-[26px] text-black">
-                            {orgName.charAt(0).toUpperCase()}
+                            {name.charAt(0).toUpperCase()}
                         </Text>
                     )}
                 </View>

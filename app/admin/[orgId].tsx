@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
+  View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl,
 } from 'react-native'
+import { ScrollView } from "react-native-gesture-handler"
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft, Camera } from 'lucide-react-native'
+import ColorPicker, { Panel1, HueSlider, Preview } from 'reanimated-color-picker'
 import { supabase } from '@/lib/supabase'
 import { pickAndUpload } from '@/lib/upload'
 import { useAuth } from '@/context/auth'
@@ -40,6 +42,8 @@ export default function OrgAdminScreen() {
   const [orgName, setOrgName] = useState('')
   const [savingName, setSavingName] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [selectedColor, setSelectedColor] = useState<string>(Colors.orgFallback)
+  const [savingColor, setSavingColor] = useState(false)
 
   const [transferUsername, setTransferUsername] = useState('')
   const [transferCandidate, setTransferCandidate] = useState<{ id: string; username: string } | null>(null)
@@ -68,6 +72,7 @@ export default function OrgAdminScreen() {
     if (orgRes.data) {
       setOrg(orgRes.data)
       setOrgName(orgRes.data.name)
+      setSelectedColor(orgRes.data.color ?? Colors.orgFallback)
     }
     if (pinsRes.data) setPins(pinsRes.data)
     if (claimsRes.data) setPendingClaims(claimsRes.data as PendingClaim[])
@@ -98,6 +103,14 @@ export default function OrgAdminScreen() {
     } finally {
       setUploadingLogo(false)
     }
+  }
+
+  const saveColor = async (hex: string) => {
+    setSavingColor(true)
+    const { error } = await supabase.from('organizations').update({ color: hex }).eq('id', orgId)
+    setSavingColor(false)
+    if (error) Alert.alert('Error', error.message)
+    else setOrg(prev => prev ? { ...prev, color: hex } : prev)
   }
 
   const saveName = async () => {
@@ -270,6 +283,28 @@ export default function OrgAdminScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Brand color */}
+      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>
+        Brand color
+      </Text>
+      <View style={{ marginBottom: 32 }}>
+        <ColorPicker
+          value={selectedColor}
+          onChangeJS={({ hex }) => setSelectedColor(hex)}
+          onCompleteJS={({ hex }) => saveColor(hex)}
+        >
+          <Preview style={{ marginBottom: 12, borderRadius: Radius.btn }} />
+          <Panel1 style={{ marginBottom: 12, borderRadius: Radius.card }} />
+          <HueSlider style={{ borderRadius: Radius.btn }} />
+        </ColorPicker>
+        {savingColor && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <ActivityIndicator size="small" color={Colors.dark.muted} />
+            <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 12, color: Colors.dark.muted }}>Saving…</Text>
+          </View>
+        )}
+      </View>
+
       {/* Pending Claims */}
       {pendingClaims.length > 0 && (
         <View style={{ marginBottom: 32 }}>
@@ -352,9 +387,9 @@ export default function OrgAdminScreen() {
                 </View>
                 <PinCard
                   id={pin.id}
-                  name={null}
+                  name={pin.name}
                   imageUrl={pin.image_url}
-                  orgName={org.name}
+                  orgColor={org.color}
                   orgLogoUrl={org.logo_url}
                   isConfirmed={false}
                   onPress={() => router.push(`/pins/${pin.id}`)}
@@ -394,7 +429,7 @@ export default function OrgAdminScreen() {
                 id={pin.id}
                 name={pin.name}
                 imageUrl={pin.image_url}
-                orgName={org.name}
+                orgColor={org.color}
                 orgLogoUrl={org.logo_url}
                 isConfirmed={true}
                 onPress={() => router.push(`/pins/${pin.id}`)}

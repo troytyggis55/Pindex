@@ -114,6 +114,7 @@ export type Database = {
       organizations: {
         Row: {
           admin_user_id: string | null
+          color: string | null
           created_at: string
           id: string
           logo_url: string | null
@@ -121,6 +122,7 @@ export type Database = {
         }
         Insert: {
           admin_user_id?: string | null
+          color?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -128,6 +130,7 @@ export type Database = {
         }
         Update: {
           admin_user_id?: string | null
+          color?: string | null
           created_at?: string
           id?: string
           logo_url?: string | null

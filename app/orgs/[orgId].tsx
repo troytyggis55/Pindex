@@ -61,7 +61,15 @@ export default function OrgDetailScreen() {
       {/* Org header */}
       <View className="flex-row items-center gap-3 mb-7">
         <OrgBadge name={org.name} logoUrl={org.logo_url} size={48} />
-        <Text className="font-monda-bold text-[24px] text-deep-black">{org.name}</Text>
+        <View>
+          <Text className="font-monda-bold text-[24px] text-deep-black">{org.name}</Text>
+          {org.color && (
+            <View className="flex-row items-center gap-1.5 mt-0.5">
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: org.color }} />
+              <Text className="font-monda text-[12px] text-gray-400">{org.color}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Pins section */}
@@ -80,6 +88,7 @@ export default function OrgDetailScreen() {
                 name={pin.name}
                 imageUrl={pin.image_url}
                 orgName={org.name}
+                orgColor={org.color}
                 orgLogoUrl={org.logo_url}
                 isConfirmed={pin.org_claimed_at != null}
                 onPress={() => router.push(`/pins/${pin.id}`)}

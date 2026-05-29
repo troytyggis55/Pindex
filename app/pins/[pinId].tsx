@@ -102,7 +102,7 @@ export default function PinDetailScreen() {
     )
   }
 
-  const orgColor = Colors.orgFallback // future: pin.organization?.color
+  const orgColor = pin.organization?.color ?? Colors.orgFallback
   const orgName = pin.organization?.name ?? 'Independent'
   const canEdit =
     (pin.created_by === session?.user.id && pin.org_claimed_at === null) ||
