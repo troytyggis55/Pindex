@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   View, Text, TouchableOpacity, Alert,
   ActivityIndicator, ScrollView,
@@ -8,13 +8,11 @@ import { useRouter } from 'expo-router'
 import { X, ArrowLeftRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
-import { PartnerModal, type Partner } from '@/components/ui/partner-modal'
+import { UserSearchModal, type Partner } from '@/components/ui/user-search-modal'
 import { TradePinCard } from '@/components/ui/trade-pin-card'
 import { AddPinButton } from '@/components/ui/add-pin-button'
-import { PinSearch } from '@/components/ui/pin-search'
+import { PinSearchModal } from '@/components/ui/pin-search-modal'
 import type { TradePinOption } from '@/types'
-
-const BALL_SIZE = 64
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function NewTradeScreen() {
@@ -25,53 +23,13 @@ export default function NewTradeScreen() {
   const [partnerModalVisible, setPartnerModalVisible] = useState(true)
   const [partner, setPartner] = useState<Partner | null>(null)
 
-  const [myCollection, setMyCollection] = useState<TradePinOption[]>([])
-
   const [activeSearch, setActiveSearch] = useState<'gave' | 'received' | null>(null)
-  const [pinQuery, setPinQuery] = useState('')
-  const [dbPinResults, setDbPinResults] = useState<TradePinOption[]>([])
-
   const [gavePins, setGavePins] = useState<TradePinOption[]>([])
   const [receivedPins, setReceivedPins] = useState<TradePinOption[]>([])
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (!session?.user) return
-    supabase
-      .from('user_pins')
-      .select('pin:pins(*, organization:organizations(*))')
-      .eq('user_id', session.user.id)
-      .eq('in_collection', true)
-      .then(({ data }) => {
-        setMyCollection((data ?? []).flatMap(up => (up.pin ? [up.pin as TradePinOption] : [])))
-      })
-  }, [])
-
-  useEffect(() => {
-    if (!pinQuery.trim() || !activeSearch) { setDbPinResults([]); return }
-    const timer = setTimeout(() => {
-      supabase
-        .from('pins')
-        .select('*, organization:organizations(*)')
-        .ilike('name', `%${pinQuery}%`)
-        .limit(10)
-        // Cast needed: supabase types are stale — `color` exists in DB but not yet in generated types
-        .then(({ data }) => setDbPinResults((data ?? []) as TradePinOption[]))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [pinQuery, activeSearch])
-
-  const openSearch = (side: 'gave' | 'received') => {
-    setActiveSearch(side)
-    setPinQuery('')
-    setDbPinResults([])
-  }
-
-  const closeSearch = () => {
-    setActiveSearch(null)
-    setPinQuery('')
-    setDbPinResults([])
-  }
+  const openSearch = (side: 'gave' | 'received') => setActiveSearch(side)
+  const closeSearch = () => setActiveSearch(null)
 
   const addPin = (pin: TradePinOption, side: 'gave' | 'received') => {
     const current = side === 'gave' ? gavePins : receivedPins
@@ -79,16 +37,6 @@ export default function NewTradeScreen() {
     if (side === 'gave') setGavePins(prev => [...prev, pin])
     else setReceivedPins(prev => [...prev, pin])
     closeSearch()
-  }
-
-  const createAndAddPin = async (name: string, side: 'gave' | 'received') => {
-    const { data, error } = await supabase
-      .from('pins')
-      .insert({ name, created_by: session!.user.id })
-      .select('*, organization:organizations(*)')
-      .single()
-    if (error || !data) { Alert.alert('Error', error?.message ?? 'Could not create pin'); return }
-    addPin(data as TradePinOption, side)
   }
 
   const removePin = (id: string, side: 'gave' | 'received') => {
@@ -152,19 +100,13 @@ export default function NewTradeScreen() {
     router.back()
   }
 
-  const collectionMatches = pinQuery.trim()
-    ? myCollection.filter(p => p.name.toLowerCase().includes(pinQuery.toLowerCase()))
-    : []
-  const myCollectionIds = new Set(myCollection.map(p => p.id))
-  const dbOnlyMatches = dbPinResults.filter(p => !myCollectionIds.has(p.id))
-
   const username = session?.user.email?.split('@')[0] ?? 'You'
 
   return (
     <View className="flex-1 bg-deep-black">
 
       {/* Partner modal — opens immediately on mount, and on name tap */}
-      <PartnerModal
+      <UserSearchModal
         visible={partnerModalVisible}
         userId={session?.user.id ?? ''}
         onSelect={p => setPartner(p)}
@@ -272,20 +214,13 @@ export default function NewTradeScreen() {
         </ScrollView>
       </View>
 
-      {/* ── PIN SEARCH OVERLAY ── */}
-      {activeSearch !== null && (
-        <View className="absolute inset-0 bg-deep-black/75 justify-center px-4">
-          <PinSearch
-            query={pinQuery}
-            collectionMatches={collectionMatches}
-            dbMatches={dbOnlyMatches}
-            onQueryChange={setPinQuery}
-            onSelect={pin => addPin(pin, activeSearch)}
-            onCreatePin={name => createAndAddPin(name, activeSearch)}
-            onCancel={closeSearch}
-          />
-        </View>
-      )}
+      {/* ── PIN SEARCH ── */}
+      <PinSearchModal
+        visible={activeSearch !== null}
+        userId={session!.user.id}
+        onSelect={pin => activeSearch && addPin(pin, activeSearch)}
+        onCancel={closeSearch}
+      />
     </View>
   )
 }

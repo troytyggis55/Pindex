@@ -22,5 +22,18 @@
       "Bash(Select-Object FullName)",
       "PowerShell(cd C:\\\\Users\\\\trygv\\\\repos\\\\Pindex && npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"collection|trade-card|error TS\" } | Select-Object -First 30)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path'); npx eslint --fix \"$FILE\" 2>&1 || exit 2"
+          }
+        ]
+      }
+    ]
   }
 }

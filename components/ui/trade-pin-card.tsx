@@ -17,7 +17,7 @@ export function TradePinCard({ pin, onRemove }: TradePinCardProps) {
       <View>
         <PinCard
           id={pin.id}
-          orgName={pin.organization?.name ?? 'Independent'}
+          name={pin.name}
           orgColor={pin.organization?.color}
           imageUrl={pin.image_url}
           isConfirmed={pin.organization_id != null}
