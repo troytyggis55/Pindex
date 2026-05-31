@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, Pressable, Platform, ScrollView, Alert, ActivityIndicator, Image } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { ChevronLeft, Camera, Building2, X, Trash2 } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import type { Database } from '@/types/supabase'
 import { useAuth } from '@/context/auth'
 import { pickImageUri, uploadImageUri } from '@/lib/upload'
 import { Colors, Radius, Spacing } from '@/constants/theme'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
+import { DateTimePicker } from '@expo/ui/community/datetime-picker';
+
 
 type OrgResult = { id: string; name: string }
 
@@ -31,7 +35,8 @@ export default function NewPinScreen() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [editionSize, setEditionSize] = useState('')
-  const [releasedAt, setReleasedAt] = useState('')
+  const [releasedAt, setReleasedAt] = useState<Date | null>(null)
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
   const [imageUri, setImageUri] = useState<string | null>(null)
 
@@ -45,6 +50,11 @@ export default function NewPinScreen() {
   const [editOrgClaimed, setEditOrgClaimed] = useState(false)
 
   const isOrgPrefilled = !!orgIdParam
+
+  const fieldBox = {
+    borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
+    padding: 12, marginBottom: 16, backgroundColor: '#fff',
+  } as const
 
   // Load existing pin in edit mode
   const loadPin = useCallback(async () => {
@@ -74,7 +84,7 @@ export default function NewPinScreen() {
     setName(data.name)
     setDescription(data.description ?? '')
     setEditionSize(data.edition_size ? String(data.edition_size) : '')
-    setReleasedAt(data.released_at ? data.released_at.slice(0, 10) : '')
+    setReleasedAt(data.released_at ? new Date(data.released_at) : null)
     setExistingImageUrl(data.image_url)
     setLoadingPin(false)
   }, [editPinId, session?.user.id])
@@ -85,18 +95,19 @@ export default function NewPinScreen() {
 
   // Debounced org search (create mode only, no org selected yet)
   useEffect(() => {
-    if ((isEditMode && editOrgClaimed) || isOrgPrefilled || selectedOrg || !orgQuery.trim()) {
-      setOrgResults([])
-      return
-    }
+    const shouldSearch = !((isEditMode && editOrgClaimed) || isOrgPrefilled || selectedOrg || !orgQuery.trim())
     const timer = setTimeout(async () => {
+      if (!shouldSearch) {
+        setOrgResults([])
+        return
+      }
       const { data } = await supabase
         .from('organizations')
         .select('id, name')
         .ilike('name', `%${orgQuery.trim()}%`)
         .limit(6)
       setOrgResults(data ?? [])
-    }, 300)
+    }, shouldSearch ? 300 : 0)
     return () => clearTimeout(timer)
   }, [orgQuery, isEditMode, editOrgClaimed, isOrgPrefilled, selectedOrg])
 
@@ -141,11 +152,11 @@ export default function NewPinScreen() {
 
     if (isEditMode) {
       // Update existing pin
-      const updates: Record<string, unknown> = {
+      const updates: Database['public']['Tables']['pins']['Update'] = {
         name: name.trim(),
         description: description.trim() || null,
         edition_size: n,
-        released_at: releasedAt.trim() || null,
+        released_at: releasedAt ? releasedAt.toISOString() : null,
       }
       if (!editOrgClaimed) {
         updates.organization_id = selectedOrg?.id ?? null
@@ -187,7 +198,7 @@ export default function NewPinScreen() {
         org_claimed_at: autoClaim,
         description: description.trim() || null,
         edition_size: n,
-        released_at: releasedAt.trim() || null,
+        released_at: releasedAt ? releasedAt.toISOString() : null,
       }).select('id').single()
 
       if (error || !data) {
@@ -225,7 +236,7 @@ export default function NewPinScreen() {
   const displayImage = imageUri ?? existingImageUrl
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: Colors.offWhite }}
       contentContainerStyle={{ padding: Spacing.screenPad, paddingTop: insets.top + 16, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
@@ -311,17 +322,26 @@ export default function NewPinScreen() {
         />
 
         <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: Colors.deepBlack, marginBottom: 6 }}>Release date</Text>
-        <TextInput
-          value={releasedAt}
-          onChangeText={setReleasedAt}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={Colors.dark.muted}
-          style={{
-            fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.deepBlack,
-            borderWidth: 1, borderColor: '#d0d0ce', borderRadius: Radius.btn,
-            padding: 12, marginBottom: 24, backgroundColor: '#fff',
-          }}
-        />
+        {Platform.OS === 'ios' ? (
+          <View style={[fieldBox, { alignItems: 'flex-start' }]}>
+            <DateTimePicker value={releasedAt ?? new Date()} onValueChange={(_, date) => setReleasedAt(date)} display="compact" />
+          </View>
+        ) : (
+          <>
+            <Pressable onPress={() => setShowDatePicker(true)} style={fieldBox}>
+              <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: releasedAt ? Colors.deepBlack : Colors.dark.muted }}>
+                {releasedAt ? releasedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
+              </Text>
+            </Pressable>
+            {showDatePicker && (
+              <DateTimePicker
+                value={releasedAt ?? new Date()}
+                onValueChange={(_, date) => { setReleasedAt(date); setShowDatePicker(false) }}
+                onDismiss={() => setShowDatePicker(false)}
+              />
+            )}
+          </>
+        )}
 
         {/* Organization — create mode + edit mode for unclaimed creator */}
         {(!isEditMode || (isEditMode && !editOrgClaimed)) && (
@@ -475,6 +495,6 @@ export default function NewPinScreen() {
               </Text>
           }
         </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   )
 }
