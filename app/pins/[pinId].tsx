@@ -8,18 +8,9 @@ import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { UserRow } from '@/components/ui/user-row'
-import { TabBar } from '@/components/ui/tab-bar'
 import { Colors } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
 import type { PinWithOrg, UserPinFlags, WantToTrader } from '@/types'
-
-type DetailTab = 'info' | 'details' | 'trade'
-
-const DETAIL_TABS: { key: DetailTab; label: string }[] = [
-  { key: 'info', label: 'Info' },
-  { key: 'details', label: 'Details' },
-  { key: 'trade', label: 'Trade' },
-]
 
 const HEADER_HEIGHT = 260
 const TAB_BAR_BOTTOM_OFFSET = 84
@@ -35,7 +26,6 @@ export default function PinDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [detailTab, setDetailTab] = useState<DetailTab>('info')
 
   const load = useCallback(async () => {
     if (!pinId || !session?.user) return
@@ -191,78 +181,51 @@ export default function PinDetailScreen() {
             </Text>
           </View>
 
-          {/* Detail tabs */}
-          <TabBar
-            tabs={DETAIL_TABS}
-            active={detailTab}
-            onChange={setDetailTab}
-            variant="segmented"
-          />
-
-          {/* Tab content */}
-          {detailTab === 'info' && (
-            <View className="gap-3">
-              {pin.description ? (
-                <Text className="font-monda text-sm text-deep-black leading-[22px]">
-                  {pin.description}
+          {/* Description */}
+          <View className="gap-3 mb-6">
+            {pin.description ? (
+              <Text className="font-monda text-sm text-deep-black leading-[22px]">
+                {pin.description}
+              </Text>
+            ) : (
+              <Text className="font-monda text-sm text-gray-500">
+                No description available.
+              </Text>
+            )}
+            {pin.edition_size && (
+              <View className="flex-row justify-between">
+                <Text className="font-monda text-sm text-gray-500">Edition size</Text>
+                <Text className="font-monda-bold text-sm text-deep-black">{pin.edition_size}</Text>
+              </View>
+            )}
+            {pin.released_at && (
+              <View className="flex-row justify-between">
+                <Text className="font-monda text-sm text-gray-500">Released</Text>
+                <Text className="font-monda-bold text-sm text-deep-black">
+                  {new Date(pin.released_at).toLocaleDateString()}
                 </Text>
-              ) : (
-                <Text className="font-monda text-sm text-gray-500">
-                  No description available.
-                </Text>
-              )}
-              {pin.edition_size && (
-                <View className="flex-row justify-between">
-                  <Text className="font-monda text-sm text-gray-500">Edition size</Text>
-                  <Text className="font-monda-bold text-sm text-deep-black">{pin.edition_size}</Text>
-                </View>
-              )}
-            </View>
-          )}
+              </View>
+            )}
+          </View>
 
-          {detailTab === 'details' && (
-            <View className="gap-3">
-              {pin.released_at && (
-                <View className="flex-row justify-between">
-                  <Text className="font-monda text-sm text-gray-500">Released</Text>
-                  <Text className="font-monda-bold text-sm text-deep-black">
-                    {new Date(pin.released_at).toLocaleDateString()}
-                  </Text>
-                </View>
-              )}
-              {!pin.released_at && (
-                <Text className="font-monda text-sm text-gray-500">
-                  No details available.
-                </Text>
-              )}
-            </View>
-          )}
-
-          {detailTab === 'trade' && (
+          {/* Traders */}
+          {traders.length > 0 && (
             <View className="gap-[10px]">
-              {traders.length === 0 ? (
-                <Text className="font-monda text-sm text-gray-500">
-                  No one is currently looking to trade this pin.
+              <View className="flex-row items-center gap-1.5 mb-1">
+                <Users size={14} color={Colors.dark.muted} strokeWidth={2} />
+                <Text className="font-monda-bold text-[13px] text-gray-500">
+                  {traders.length} {traders.length === 1 ? 'person' : 'people'} up to trade this pin
                 </Text>
-              ) : (
-                <>
-                  <View className="flex-row items-center gap-1.5 mb-1">
-                    <Users size={14} color={Colors.dark.muted} strokeWidth={2} />
-                    <Text className="font-monda-bold text-[13px] text-gray-500">
-                      {traders.length} {traders.length === 1 ? 'person' : 'people'} want to trade this
-                    </Text>
-                  </View>
-                  {traders.map(t => (
-                    <UserRow
-                      key={t.user_id}
-                      id={t.user_id}
-                      username={t.profile.username}
-                      onPress={() => router.push(`/users/${t.user_id}`)}
-                      showChevron
-                    />
-                  ))}
-                </>
-              )}
+              </View>
+              {traders.map(t => (
+                <UserRow
+                  key={t.user_id}
+                  id={t.user_id}
+                  username={t.profile.username}
+                  onPress={() => router.push(`/users/${t.user_id}`)}
+                  showChevron
+                />
+              ))}
             </View>
           )}
         </View>
