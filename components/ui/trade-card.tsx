@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { ChevronRight } from 'lucide-react-native'
-import { Colors, Radius } from '@/constants/theme'
+import { TradeStatusBadge } from '@/components/ui/trade-status-badge'
+import { Colors } from '@/constants/theme'
 import type { TradeWithDetails } from '@/types'
 
 export type TradeCardProps = {
@@ -9,28 +10,6 @@ export type TradeCardProps = {
   currentUserId: string
   isPending?: boolean
   onPress: () => void
-}
-
-/** Confirmed / Unconfirmed status pill — unexported, only used inside TradeCard */
-function StatusBadge({ status }: { status: string }) {
-  const isUnconfirmed = status === 'unconfirmed'
-  return (
-    <View
-      style={{
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 8,
-        backgroundColor: isUnconfirmed ? '#fef3c7' : '#dcfce7',
-      }}
-    >
-      <Text
-        className="font-monda-bold text-[11px]"
-        style={{ color: isUnconfirmed ? '#92400e' : '#166534' }}
-      >
-        {isUnconfirmed ? 'Unconfirmed' : 'Confirmed'}
-      </Text>
-    </View>
-  )
 }
 
 export function TradeCard({ trade, currentUserId, isPending = false, onPress }: TradeCardProps) {
@@ -53,7 +32,7 @@ export function TradeCard({ trade, currentUserId, isPending = false, onPress }: 
       <View className="flex-row justify-between items-center mb-2">
         <Text className="font-monda-bold text-[15px] text-deep-black">{partnerName}</Text>
         <View className="flex-row items-center gap-1.5">
-          <StatusBadge status={trade.status} />
+          <TradeStatusBadge status={trade.status} />
           <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
         </View>
       </View>

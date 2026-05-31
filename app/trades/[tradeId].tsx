@@ -1,147 +1,166 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ChevronLeft, ArrowLeftRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
-import type { Trade, TradeItem, Pin } from '@/types'
+import { Avatar } from '@/components/ui/avatar'
+import { TradeStatusBadge } from '@/components/ui/trade-status-badge'
+import { TradeSide } from '@/components/ui/trade-side'
+import type { TradeDetail } from '@/types'
 
-type Profile = { id: string; username: string }
-type ContactRow = { id: string; name: string }
-type TradeWithDetails = Trade & {
-  initiator: Profile
-  receiver_profile: Profile | null
-  receiver_contact: ContactRow | null
-  trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
-}
+const HEADER_HEIGHT = 220
 
 export default function TradeDetailScreen() {
   const { tradeId } = useLocalSearchParams<{ tradeId: string }>()
   const { session } = useAuth()
   const router = useRouter()
-  const [trade, setTrade] = useState<TradeWithDetails | null>(null)
+  const insets = useSafeAreaInsets()
+  const [trade, setTrade] = useState<TradeDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!tradeId) return
-    supabase
+    const { data, error } = await supabase
       .from('trades')
       .select(`
         *,
-        initiator:profiles!initiator_id(id, username),
-        receiver_profile:profiles!receiver_profile_id(id, username),
+        initiator:profiles!initiator_id(id, username, avatar_url),
+        receiver_profile:profiles!receiver_profile_id(id, username, avatar_url),
         receiver_contact:contacts!receiver_contact_id(id, name),
-        trade_items(id, side, pin:pins(id, name))
+        trade_items(id, side, pin:pins(id, name, image_url, organization_id, organization:organizations(color)))
       `)
       .eq('id', tradeId)
       .single()
-      .then(({ data, error }) => {
-        if (!error && data) setTrade(data as TradeWithDetails)
-        setLoading(false)
-      })
+    if (!error && data) setTrade(data as TradeDetail)
+    setLoading(false)
   }, [tradeId])
+
+  useFocusEffect(useCallback(() => { load() }, [load]))
 
   const confirmTrade = async () => {
     setConfirming(true)
+    const confirmedAt = new Date().toISOString()
     const { error } = await supabase
       .from('trades')
-      .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+      .update({ status: 'confirmed', confirmed_at: confirmedAt })
       .eq('id', tradeId)
     if (error) {
       Alert.alert('Error', error.message)
     } else {
-      setTrade(prev => prev ? { ...prev, status: 'confirmed', confirmed_at: new Date().toISOString() } : null)
+      setTrade(prev => prev ? { ...prev, status: 'confirmed', confirmed_at: confirmedAt } : null)
     }
     setConfirming(false)
   }
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
-  if (!trade) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Trade not found</Text></View>
+  if (!trade || !session) {
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <Text className="font-monda">Trade not found</Text>
+      </View>
+    )
   }
-
-  if (!session) return null
 
   const myId = session.user.id
   const isInitiator = trade.initiator_id === myId
   const isReceiver = trade.receiver_profile_id === myId
   const canConfirm = isReceiver && trade.status === 'unconfirmed'
 
+  // Viewer-centric framing: "you" on the left, the other party on the right.
+  const me = isInitiator ? trade.initiator : trade.receiver_profile
   const partnerName = isInitiator
     ? (trade.receiver_profile?.username ?? trade.receiver_contact?.name ?? '?')
     : trade.initiator.username
+  const partnerAvatarUrl = isInitiator
+    ? trade.receiver_profile?.avatar_url ?? null
+    : trade.initiator.avatar_url
 
   // Items from the viewer's perspective
   const gave = trade.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
   const received = trade.trade_items.filter(t => isInitiator ? t.side === 'received' : t.side === 'gave')
 
+  const openPin = (pinId: string) => router.push(`/pins/${pinId}`)
+
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
-      <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: '#555' }}>← Back</Text>
-      </TouchableOpacity>
+    <View className="flex-1 bg-off-white">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: canConfirm ? 120 : 40 }}>
+        {/* Header band — the two parties facing each other */}
+        <View style={{ height: HEADER_HEIGHT }} className="bg-deep-black">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="absolute left-4 flex-row items-center gap-1 bg-white/15 px-3 py-1.5 rounded-btn"
+            style={{ top: insets.top + 12 }}
+          >
+            <ChevronLeft size={16} color="#fff" strokeWidth={2.5} />
+            <Text className="font-monda-bold text-[13px] text-white">Back</Text>
+          </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Trade with {partnerName}</Text>
-        <View style={{
-          paddingHorizontal: 8,
-          paddingVertical: 3,
-          borderRadius: 6,
-          backgroundColor: trade.status === 'unconfirmed' ? '#fef9c3' : '#dcfce7',
-        }}>
-          <Text style={{ fontSize: 13, fontWeight: '600', color: trade.status === 'unconfirmed' ? '#854d0e' : '#166534' }}>
-            {trade.status === 'unconfirmed' ? 'Unconfirmed' : 'Confirmed'}
-          </Text>
+          <View className="absolute right-4" style={{ top: insets.top + 12 }}>
+            <TradeStatusBadge status={trade.status} />
+          </View>
+
+          <View className="flex-1 flex-row items-center justify-center gap-6" style={{ paddingTop: insets.top + 24 }}>
+            <View className="items-center gap-2 w-20">
+              <Avatar url={me?.avatar_url} username={me?.username ?? 'You'} size={64} />
+              <Text numberOfLines={1} className="font-monda-bold text-[13px] text-white">You</Text>
+            </View>
+
+            <ArrowLeftRight size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} />
+
+            <View className="items-center gap-2 w-20">
+              <Avatar url={partnerAvatarUrl} username={partnerName} size={64} />
+              <Text numberOfLines={1} className="font-monda-bold text-[13px] text-white">{partnerName}</Text>
+            </View>
+          </View>
         </View>
-      </View>
 
-      {trade.confirmed_at && (
-        <Text style={{ color: '#888', fontSize: 13, marginBottom: 16 }}>
-          Confirmed {new Date(trade.confirmed_at).toLocaleDateString()}
-        </Text>
-      )}
+        {/* Content */}
+        <View className="px-4 pt-6 gap-7">
+          {trade.confirmed_at && (
+            <Text className="font-monda text-[13px] text-gray-500 text-center">
+              Confirmed {new Date(trade.confirmed_at).toLocaleDateString()}
+            </Text>
+          )}
 
-      <View style={{ marginBottom: 20, marginTop: 16 }}>
-        <Text style={{ fontWeight: '700', marginBottom: 8 }}>You gave</Text>
-        {gave.length === 0 ? (
-          <Text style={{ color: '#888' }}>Nothing</Text>
-        ) : (
-          gave.map(item => (
-            <View key={item.id} style={{ paddingVertical: 4 }}>
-              <Text>• {item.pin.name}</Text>
-            </View>
-          ))
-        )}
-      </View>
+          <TradeSide label="You gave" items={gave} onPinPress={openPin} />
 
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontWeight: '700', marginBottom: 8 }}>You received</Text>
-        {received.length === 0 ? (
-          <Text style={{ color: '#888' }}>Nothing</Text>
-        ) : (
-          received.map(item => (
-            <View key={item.id} style={{ paddingVertical: 4 }}>
-              <Text>• {item.pin.name}</Text>
-            </View>
-          ))
-        )}
-      </View>
+          <View className="h-px bg-[#e8e8e6]" />
 
+          <TradeSide label="You received" items={received} onPinPress={openPin} />
+        </View>
+      </ScrollView>
+
+      {/* Confirm action bar — fixed at bottom */}
       {canConfirm && (
-        <TouchableOpacity
-          onPress={() => Alert.alert('Confirm trade', 'Confirm that this trade happened?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Confirm', onPress: confirmTrade },
-          ])}
-          disabled={confirming}
-          style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
+        <View
+          className="absolute bottom-0 left-0 right-0 bg-off-white border-t border-t-[#e8e8e6] px-4 pt-3"
+          style={{ paddingBottom: insets.bottom + 12 }}
         >
-          <Text style={{ color: '#fff' }}>Confirm trade</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Alert.alert('Confirm trade', 'Confirm that this trade happened?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Confirm', onPress: confirmTrade },
+            ])}
+            disabled={confirming}
+            className="bg-deep-black py-[14px] rounded-btn items-center"
+          >
+            {confirming
+              ? <ActivityIndicator color="#fff" />
+              : <Text className="font-monda-bold text-sm text-white">Confirm trade</Text>
+            }
+          </TouchableOpacity>
+        </View>
       )}
-    </ScrollView>
+    </View>
   )
 }

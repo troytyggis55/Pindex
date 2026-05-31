@@ -51,5 +51,21 @@ export type TradeWithDetails = Trade & {
   trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
 }
 
+/** Pin shape shown as a PinCard inside the trade detail screen */
+export type TradePinSnap = Pick<Pin, 'id' | 'name' | 'image_url' | 'organization_id'> & {
+  organization: { color: string | null } | null
+}
+
+/** A single trade item joined with its pin, as shown on the detail screen */
+export type TradeDetailItem = TradeItem & { pin: TradePinSnap }
+
+/** Trade with rich relations for the detail screen — renders a PinCard per item */
+export type TradeDetail = Trade & {
+  initiator: ProfileSnap
+  receiver_profile: ProfileSnap | null
+  receiver_contact: Pick<Contact, 'id' | 'name'> | null
+  trade_items: TradeDetailItem[]
+}
+
 /** Follow row with the followed user's profile */
 export type FollowingUser = { following_id: string; profile: ProfileSnap }
