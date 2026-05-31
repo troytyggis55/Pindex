@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from '@/context/auth'
 import { useFonts, Monda_400Regular, Monda_700Bold } from '@expo-google-fonts/monda'
 import * as SplashScreen from 'expo-splash-screen'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -44,11 +45,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <RootLayoutNav />
-        </AuthProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <RootLayoutNav />
+          </AuthProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   )
 }
