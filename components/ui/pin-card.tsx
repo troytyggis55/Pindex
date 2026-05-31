@@ -11,10 +11,11 @@ interface PinCardProps {
     index?: number | null       // kept for call-site compatibility
     flags?: Record<string, boolean>  // kept for call-site compatibility
     onPress?: () => void
-    hideName?: boolean  // kept for call-site compatibility
+    hideName?: boolean    // hide the name label (e.g. in overlapping stacks)
+    hideShadow?: boolean  // hide the elliptical glow shadow
+    size?: number         // circle diameter in px (default 76)
 }
 
-const CIRCLE_SIZE = 76
 const SHADOW_SPACE = 0
 
 export function PinCard({
@@ -23,20 +24,26 @@ export function PinCard({
     orgColor,
     isConfirmed = true,
     onPress,
+    hideName = false,
+    hideShadow = false,
+    size = 76,
 }: PinCardProps) {
+    const CIRCLE_SIZE = size
     const shadowColor = isConfirmed ? (orgColor ?? Colors.orgFallback) : '#9CA3AF'
 
     return (
         <TouchableOpacity onPress={onPress} activeOpacity={0.85} className="items-center">
             <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE + SHADOW_SPACE }} className="items-center">
                 {/* Elliptical glow shadow — rendered first so circle sits on top */}
-                <View
-                    className="absolute bottom-0 w-12 h-0 rounded"
-                    style={{
-                        backgroundColor: shadowColor,
-                        boxShadow: `0px 0px 20px 10px ${shadowColor}`,
-                    }}
-                />
+                {!hideShadow && (
+                    <View
+                        className="absolute bottom-0 w-12 h-0 rounded"
+                        style={{
+                            backgroundColor: shadowColor,
+                            boxShadow: `0px 0px 20px 10px ${shadowColor}`,
+                        }}
+                    />
+                )}
 
                 {/* Inner view clips image to circle */}
                 <View
@@ -61,7 +68,7 @@ export function PinCard({
                 </View>
             </View>
 
-            {name && (
+            {name && !hideName && (
                 <Text
                     numberOfLines={1}
                     ellipsizeMode="tail"

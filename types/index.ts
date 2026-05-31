@@ -43,21 +43,21 @@ export type TradePinOption = {
   organization: { id: string; name: string; color: string | null } | null
 }
 
-/** Trade with all relations needed to render a trade card */
-export type TradeWithDetails = Trade & {
-  initiator: ProfileSnap
-  receiver_profile: ProfileSnap | null
-  receiver_contact: Pick<Contact, 'id' | 'name'> | null
-  trade_items: Array<TradeItem & { pin: Pick<Pin, 'id' | 'name'> }>
-}
-
 /** Pin shape shown as a PinCard inside the trade detail screen */
 export type TradePinSnap = Pick<Pin, 'id' | 'name' | 'image_url' | 'organization_id'> & {
   organization: { color: string | null } | null
 }
 
-/** A single trade item joined with its pin, as shown on the detail screen */
+/** A single trade item joined with its pin, as shown on the detail/list cards */
 export type TradeDetailItem = TradeItem & { pin: TradePinSnap }
+
+/** Trade with all relations needed to render a trade card */
+export type TradeWithDetails = Trade & {
+  initiator: ProfileSnap
+  receiver_profile: ProfileSnap | null
+  receiver_contact: Pick<Contact, 'id' | 'name'> | null
+  trade_items: TradeDetailItem[]
+}
 
 /** Trade with rich relations for the detail screen — renders a PinCard per item */
 export type TradeDetail = Trade & {

@@ -45,10 +45,10 @@ export default function PersonalScreen() {
         .from('trades')
         .select(`
           *,
-          initiator:profiles!initiator_id(id, username),
-          receiver_profile:profiles!receiver_profile_id(id, username),
+          initiator:profiles!initiator_id(id, username, avatar_url),
+          receiver_profile:profiles!receiver_profile_id(id, username, avatar_url),
           receiver_contact:contacts!receiver_contact_id(id, name),
-          trade_items(id, side, pin:pins(id, name))
+          trade_items(id, side, pin:pins(id, name, image_url, organization_id, organization:organizations(color)))
         `)
         .or(`initiator_id.eq.${myId},receiver_profile_id.eq.${myId}`)
         .order('confirmed_at', { ascending: false, nullsFirst: true }),
