@@ -180,7 +180,7 @@ export default function PersonalScreen() {
             data={myTrades}
             keyExtractor={t => t.id}
             refreshControl={refreshControl}
-            contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16, gap: 10 }}
+            contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: TAB_BAR_BOTTOM_OFFSET + 16 }}
             ListHeaderComponent={pendingConfirmation.length > 0 ? (
               <View className="mb-4">
                 <Text
@@ -213,11 +213,12 @@ export default function PersonalScreen() {
               ? <Text className="font-monda text-gray-500 text-center mt-10">No trades recorded yet.</Text>
               : null
             }
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <TradeCard
                 trade={item}
                 currentUserId={myId}
                 onPress={() => router.push(`/trades/${item.id}`)}
+                isLast={index === myTrades.length - 1}
               />
             )}
           />

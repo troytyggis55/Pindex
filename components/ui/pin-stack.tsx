@@ -7,10 +7,8 @@ export type PinStackProps = {
   mirror?: boolean
 }
 
-/** Circle diameter for cards in the stack. */
-const PIN_SIZE = 52
 /** How far each card slides under the previous one. */
-const OVERLAP = 18
+const OVERLAP = 22
 /** Show at most this many cards before collapsing the rest into a +N badge. */
 const MAX_VISIBLE = 3
 
@@ -34,10 +32,10 @@ export function PinStack({ items, mirror = false }: PinStackProps) {
       {mirror && overflow > 0 && (
         <View
           pointerEvents="none"
-          style={{ width: PIN_SIZE, height: PIN_SIZE, zIndex: 0 }}
+          style={{ zIndex: 0 }}
           className="rounded-full bg-gray-200 items-center justify-center"
         >
-          <Text className="font-monda-bold text-[15px] text-gray-600">+{overflow}</Text>
+          <Text className="font-monda-bold text-[15px] text-gray-600  mr-1">+{overflow}</Text>
         </View>
       )}
 
@@ -52,22 +50,16 @@ export function PinStack({ items, mirror = false }: PinStackProps) {
               imageUrl={item.pin.image_url}
               orgColor={item.pin.organization?.color}
               isConfirmed={item.pin.organization_id != null}
-              size={PIN_SIZE}
+              size="small"
               hideName
-              hideShadow
+              hideBorder
             />
           </View>
         )
       })}
 
       {!mirror && overflow > 0 && (
-        <View
-          pointerEvents="none"
-          style={{ width: PIN_SIZE, height: PIN_SIZE, marginLeft: -OVERLAP, zIndex: 0 }}
-          className="rounded-full bg-gray-200 items-center justify-center"
-        >
-          <Text className="font-monda-bold text-[15px] text-gray-600">+{overflow}</Text>
-        </View>
+        <Text className="font-monda-bold text-[15px] text-gray-600 ml-1">+{overflow}</Text>
       )}
     </View>
   )
