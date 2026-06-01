@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { ArrowLeftRight, ChevronRight } from 'lucide-react-native'
-import { TradeStatusBadge } from '@/components/ui/trade-status-badge'
 import { PinStack } from '@/components/ui/pin-stack'
 import { Avatar } from '@/components/ui/avatar'
 import { Colors } from '@/constants/theme'
