@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native'
-import { useRouter, useFocusEffect } from 'expo-router'
+import { useCallback } from 'react'
+import { useRouter } from 'expo-router'
+import { Text, TouchableOpacity } from 'react-native'
 import { supabase } from '@/lib/supabase'
+import { InfiniteList } from '@/components/infinite-list'
 import { OrgBadge } from '@/components/ui/org-badge'
 import { Spacing } from '@/constants/theme'
 import type { Organization } from '@/types'
@@ -12,38 +13,22 @@ export interface ExploreOrgsTabProps {
 
 export function ExploreOrgsTab({ query }: ExploreOrgsTabProps) {
   const router = useRouter()
-  const [orgs, setOrgs] = useState<Organization[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const q = query.trim()
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.from('organizations').select('*').order('name')
-    if (data) setOrgs(data)
-    setLoading(false)
-    setRefreshing(false)
-  }, [])
-
-  useFocusEffect(useCallback(() => { load() }, [load]))
-
-  const onRefresh = () => { setRefreshing(true); load() }
-
-  const q = query.trim().toLowerCase()
-  const data = useMemo(() => (q ? orgs.filter(o => o.name.toLowerCase().includes(q)) : orgs), [orgs, q])
+  const buildQuery = useCallback(
+    (sb: typeof supabase) => {
+      let base = sb.from('organizations').select('*')
+      if (q) base = base.ilike('name', `%${q}%`)
+      return base.order('name')
+    },
+    [q]
+  )
 
   return (
-    <FlatList
-      data={data}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      keyExtractor={o => o.id}
-      keyboardShouldPersistTaps="handled"
+    <InfiniteList<Organization>
+      buildQuery={buildQuery}
+      emptyText="No organizations found."
       contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: Spacing.navOffset + 16, gap: 10 }}
-      ListEmptyComponent={
-        loading ? (
-          <ActivityIndicator className="mt-10" />
-        ) : (
-          <Text className="font-monda text-gray-500 text-center mt-10">No organizations found.</Text>
-        )
-      }
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => router.push(`/orgs/${item.id}`)}

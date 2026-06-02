@@ -13,13 +13,16 @@ export interface ExplorePinsTabProps {
 
 export function ExplorePinsTab({ query }: ExplorePinsTabProps) {
   const router = useRouter()
+  const q = query.trim()
 
   const buildQuery = useCallback(
-    (sb: typeof supabase) =>
-      sb.from('pins')
+    (sb: typeof supabase) => {
+      let base = sb.from('pins')
         .select('*, organization:organizations(*)')
-        .order('created_at', { ascending: false }),
-    []
+      if (q) base = base.ilike('name', `%${q}%`)
+      return base.order('created_at', { ascending: false })
+    },
+    [q]
   )
 
   return (

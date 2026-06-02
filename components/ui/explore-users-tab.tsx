@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
-import { Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
+import { useCallback, useState } from 'react'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
+import { InfiniteList } from '@/components/infinite-list'
 import { UserRow } from '@/components/ui/user-row'
 import { Spacing } from '@/constants/theme'
 import type { ProfileSnap } from '@/types'
@@ -15,25 +15,24 @@ export function ExploreUsersTab({ query }: ExploreUsersTabProps) {
   const router = useRouter()
   const { session } = useAuth()
   const myId = session!.user.id
-  const [users, setUsers] = useState<ProfileSnap[]>([])
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const q = query.trim()
 
-  const load = useCallback(async () => {
-    const [usersRes, followsRes] = await Promise.all([
-      supabase.from('profiles').select('id, username, avatar_url').neq('id', myId).order('username'),
-      supabase.from('follows').select('following_id').eq('follower_id', myId),
-    ])
-    if (usersRes.data) setUsers(usersRes.data)
-    if (followsRes.data) setFollowingIds(new Set(followsRes.data.map(f => f.following_id)))
-    setLoading(false)
-    setRefreshing(false)
+  const loadFollows = useCallback(async () => {
+    const { data } = await supabase.from('follows').select('following_id').eq('follower_id', myId)
+    if (data) setFollowingIds(new Set(data.map(f => f.following_id)))
   }, [myId])
 
-  useFocusEffect(useCallback(() => { load() }, [load]))
+  useFocusEffect(useCallback(() => { loadFollows() }, [loadFollows]))
 
-  const onRefresh = () => { setRefreshing(true); load() }
+  const buildQuery = useCallback(
+    (sb: typeof supabase) => {
+      let base = sb.from('profiles').select('id, username, avatar_url').neq('id', myId)
+      if (q) base = base.ilike('username', `%${q}%`)
+      return base.order('username')
+    },
+    [myId, q]
+  )
 
   const toggleFollow = async (userId: string) => {
     if (followingIds.has(userId)) {
@@ -45,23 +44,11 @@ export function ExploreUsersTab({ query }: ExploreUsersTabProps) {
     }
   }
 
-  const q = query.trim().toLowerCase()
-  const data = useMemo(() => (q ? users.filter(u => u.username.toLowerCase().includes(q)) : users), [users, q])
-
   return (
-    <FlatList
-      data={data}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      keyExtractor={u => u.id}
-      keyboardShouldPersistTaps="handled"
+    <InfiniteList<ProfileSnap>
+      buildQuery={buildQuery}
+      emptyText="No users found."
       contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: Spacing.navOffset + 16, gap: 10 }}
-      ListEmptyComponent={
-        loading ? (
-          <ActivityIndicator className="mt-10" />
-        ) : (
-          <Text className="font-monda text-gray-500 text-center mt-10">No users found.</Text>
-        )
-      }
       renderItem={({ item }) => (
         <UserRow
           id={item.id}
