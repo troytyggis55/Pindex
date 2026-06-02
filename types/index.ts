@@ -25,6 +25,9 @@ export type OrgSnap = { name: string; logo_url: string | null }
 /** Pin with its full Organization row (or null if unaffiliated) */
 export type PinWithOrg = Pin & { organization: Organization | null }
 
+/** The three sub-tabs on the Explore screen */
+export type ExploreTab = 'pins' | 'orgs' | 'users'
+
 /** The subset of UserPin flags used on the pin detail screen */
 export type UserPinFlags = Pick<UserPin, 'id' | 'in_collection' | 'wishlisted' | 'want_to_trade'>
 

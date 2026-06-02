@@ -42,6 +42,7 @@ export const Spacing = {
   cardPad:  12,
   gridGap:  12,
   screenPad: 16,
+  navOffset: 84, // floating bottom nav height + padding; bottom inset for scroll content
 } as const
 
 // Flag metadata — single source of truth for label + color per UserPin flag
