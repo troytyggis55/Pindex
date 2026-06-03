@@ -70,5 +70,5 @@ export type TradeDetail = Trade & {
   trade_items: TradeDetailItem[]
 }
 
-/** Follow row with the followed user's profile */
-export type FollowingUser = { following_id: string; profile: ProfileSnap }
+/** Follow row with the followed user's profile (`id` is aliased from `following_id`) */
+export type FollowingUser = { id: string; profile: ProfileSnap }
