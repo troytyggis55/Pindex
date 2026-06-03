@@ -107,7 +107,7 @@ export function PinSearchModal({ visible, userId, onSelect, onCancel }: PinSearc
         </TouchableOpacity>
       </View>
 
-      <KeyboardAwareScrollView>
+      <KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
         {/* Collection section */}
         {collectionMatches.length > 0 && (
           <>

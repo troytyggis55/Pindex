@@ -57,7 +57,6 @@ export default function AppLayout() {
           shadowOpacity: 0.35,
           shadowRadius: 12,
           elevation: 10,
-          display: 'none',
         },
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: Colors.dark.muted,

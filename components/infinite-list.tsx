@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, type FlatListProps } from 'react-native'
+import { Text, FlatList, ActivityIndicator, RefreshControl, type FlatListProps } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useInfiniteQuery } from '@/hooks/use-infinite-query'
@@ -19,6 +19,7 @@ interface InfiniteListProps<T> extends PassthroughProps<T> {
   emptyText?: string
 }
 
+// TODO: When doing search, we want the already loaded pins to be filterered properly, while the remaing non loaded pins should be fetched in the backend with a loading icon.
 export function InfiniteList<T extends { id: string }>({
   buildQuery,
   pageSize,

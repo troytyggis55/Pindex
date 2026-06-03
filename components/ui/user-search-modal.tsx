@@ -91,7 +91,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
           )}
         </View>
 
-        <KeyboardAwareScrollView>
+        <KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
           {!isSearching && following.length > 0 && (
             <>
               <Text className="font-monda-bold text-[10px] text-gray-400 tracking-widest mb-1.5">
