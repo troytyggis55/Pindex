@@ -1,85 +1,95 @@
-import { Tabs, useRouter } from 'expo-router'
-import { TouchableOpacity, View } from 'react-native'
+import { Ref } from 'react'
+import { Pressable, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Compass, User, ArrowLeftRight } from 'lucide-react-native'
+import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps } from 'expo-router/ui'
+import { useRouter } from 'expo-router'
+import { ArrowLeftRight, Compass, User, type LucideIcon } from 'lucide-react-native'
 import { Colors } from '@/constants/theme'
 
-const TAB_BAR_HEIGHT = 60
+const TRADE_BUTTON_SIZE = 72
 
-function NewTradeButton() {
-  const router = useRouter()
+type NavTabButtonProps = TabTriggerSlotProps & {
+  icon: LucideIcon
+  isLeftSide: boolean
+  ref?: Ref<View>
+}
+
+/**
+ * A single icon tab. `isFocused` and the press handlers are forwarded from the
+ * wrapping `<TabTrigger asChild>`. When focused the whole cell fills with a
+ * brighter surface; the bar's `overflow-hidden` + `rounded-t-4xl` clips the
+ * outer-top corner, while the inner edge stays flat where the two tabs meet.
+ */
+function NavTabButton({ icon: Icon, isFocused, isLeftSide, ...props }: NavTabButtonProps) {
   return (
-    <TouchableOpacity
-      onPress={() => router.push('/trades/new')}
-      style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}
-      activeOpacity={0.8}
-    >
+    <Pressable {...props} className="flex-1 self-stretch">
       <View
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 24,
-          backgroundColor: Colors.red,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: Colors.red,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
-          elevation: 6,
-        }}
+        className={`flex-1 items-center justify-center ${isFocused ? `bg-deep-black-surface  border-deep-black border-t-4 border-b-4 ${isLeftSide ? ' rounded-l-4xl' : 'rounded-r-4xl'}` : ''} ${isLeftSide ? 'pr-8 border-l-4' : 'pl-8 border-r-4'}`}
       >
-        <ArrowLeftRight size={20} color="#fff" strokeWidth={2.5} />
+        <Icon size={32} color={isFocused ? Colors.offWhite : Colors.dark.muted} strokeWidth={2} />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   )
 }
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { paddingTop: insets.top, backgroundColor: Colors.offWhite },
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: insets.bottom + 12,
-          left: 32,
-          right: 32,
-          height: TAB_BAR_HEIGHT,
-          borderRadius: TAB_BAR_HEIGHT / 2,
-          backgroundColor: Colors.deepBlack,
-          borderTopWidth: 0,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.35,
-          shadowRadius: 12,
-          elevation: 10,
-        },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: Colors.dark.muted,
-      }}
-    >
-      <Tabs.Screen
-        name="explore"
-        options={{
-          tabBarIcon: ({ color }) => <Compass size={22} color={color} strokeWidth={2} />,
-        }}
-      />
-      <Tabs.Screen
-        name="trades"
-        options={{
-          tabBarButton: () => <NewTradeButton />,
-        }}
-      />
-      <Tabs.Screen
-        name="collection"
-        options={{
-          tabBarIcon: ({ color }) => <User size={22} color={color} strokeWidth={2} />,
-        }}
-      />
+    <Tabs>
+      <View className="flex-1 bg-off-white" style={{ paddingTop: insets.top }}>
+        <TabSlot />
+      </View>
+
+      {/* The visible bar — only the two tabs, meeting flush at the centre. The
+          trade button floats over the seam as a sibling below, so it isn't
+          clipped by `overflow-hidden`. TabTriggers only need a `name`; the
+          hidden TabList below does the route registration. */}
+      <View
+        className="absolute left-0 right-0 items-center"
+        style={{ bottom: insets.bottom }}
+        pointerEvents="box-none"
+      >
+        <View
+          className="w-64 h-16 flex-row items-stretch bg-deep-black rounded-4xl overflow-hidden"
+        >
+          <TabTrigger name="explore" asChild>
+            <NavTabButton icon={Compass} isLeftSide />
+          </TabTrigger>
+
+          <TabTrigger name="collection" asChild>
+            <NavTabButton icon={User} isLeftSide={false} />
+          </TabTrigger>
+        </View>
+      </View>
+
+      {/* Centre action — floats on top of the bar's centre seam. Not a tab; it
+          pushes the new-trade route. The wrapper is `box-none` so only the
+          button itself catches touches. */}
+      <View
+        className="absolute left-0 right-0 items-center"
+        style={{ bottom: insets.bottom + 16}}
+        pointerEvents="box-none"
+      >
+        <TouchableOpacity
+          onPress={() => router.push('/trades/new')}
+          className="items-center justify-center"
+          activeOpacity={0.85}
+        >
+          <View
+            className="items-center justify-center rounded-full bg-pin-red border-4 border-deep-black/20"
+            style={{ height: TRADE_BUTTON_SIZE, width: TRADE_BUTTON_SIZE }}
+          >
+            <ArrowLeftRight size={24} color={Colors.offWhite} strokeWidth={2.5} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Hidden — registers the routes so the triggers above resolve. */}
+      <TabList style={{ display: 'none' }}>
+        <TabTrigger name="explore" href="/explore" />
+        <TabTrigger name="collection" href="/collection" />
+      </TabList>
     </Tabs>
   )
 }

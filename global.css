@@ -17,6 +17,7 @@
   --color-pin-purple: #6004bc;
   --color-off-white: #fffffa;
   --color-deep-black: #000e19;
+  --color-deep-black-surface: #ffffff20; /* 13% opacity */
 
   /* Radii (rounded-card, rounded-btn) */
   --radius-card: 20px;

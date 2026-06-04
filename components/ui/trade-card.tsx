@@ -33,7 +33,7 @@ export function TradeCard({ trade, currentUserId, isPending = false, onPress, is
     >
 
       <View className='mr-4'>
-        <Avatar url={partner?.avatar_url} username={partnerName} size={60} />
+        <Avatar url={partner?.avatar_url} username={partnerName} size={50} />
       </View>
         
         {/* Only show status if confirmed is true 
@@ -43,7 +43,7 @@ export function TradeCard({ trade, currentUserId, isPending = false, onPress, is
         */}
 
       <View className='flex-col flex-1 gap-1'>
-        <Text numberOfLines={1} className="font-monda text-3xl text-ellipsis w-60 text-deep-black">
+        <Text numberOfLines={1} className="font-monda text-xl text-ellipsis w-60 text-deep-black">
           {partnerName}
         </Text>
 
