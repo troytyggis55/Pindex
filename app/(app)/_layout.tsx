@@ -37,7 +37,7 @@ export default function AppLayout() {
   const router = useRouter()
   return (
     <Tabs>
-      <View className="flex-1 bg-off-white" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-pin-red" style={{ paddingTop: insets.top }}>
         <TabSlot />
       </View>
 
@@ -84,6 +84,13 @@ export default function AppLayout() {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Bottom shadow gradient to make elements fade out */}
+      <View
+        className="absolute left-0 right-0 h-32"
+        style={{ bottom: insets.bottom, backgroundColor: 'linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.5))' }}
+        pointerEvents="none"
+      />
 
       {/* Hidden — registers the routes so the triggers above resolve. */}
       <TabList style={{ display: 'none' }}>

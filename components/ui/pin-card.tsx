@@ -1,5 +1,6 @@
 import { TouchableOpacity, View, Text, Image } from "react-native";
 import { Colors } from "@/constants/theme";
+import Color from "colorjs.io"
 
 interface PinCardProps {
   id: string;
@@ -38,9 +39,18 @@ export function PinCard({
   size = "medium",
 }: PinCardProps) {
   const CIRCLE_SIZE = SIZES[size];
+  
   const borderColor = isConfirmed
     ? (orgColor ?? Colors.orgFallback)
     : "#9CA3AF";
+  
+  // Calculate text color for contrast against border color using APCA.
+  const bg = new Color(borderColor);
+  const onBlack = Math.abs(bg.contrast("black", "APCA"));
+  const onWhite = Math.abs(bg.contrast("white", "APCA"));
+  const textColor = onWhite >= onBlack ? "white" : "black";
+
+
   const styleClass = size === "medium" ? "p-[4px] border-3" : "p-0 border-2";
   const letterStyle = size === "medium" ? "text-[26px]" : "text-[14px]";
 
@@ -77,9 +87,10 @@ export function PinCard({
         >
           {/* Inner view clips image to circle */}
           <View
-            className="overflow-hidden items-center justify-center flex-1 w-full bg-amber-50"
+            className="overflow-hidden items-center justify-center flex-1 w-full"
             style={{
               borderRadius: CIRCLE_SIZE / 2,
+              backgroundColor: borderColor,
             }}
           >
             {imageUrl ? (
@@ -89,7 +100,10 @@ export function PinCard({
                 resizeMode="cover"
               />
             ) : (
-              <Text className={`font-monda-bold text-black ${letterStyle}`}>
+              <Text
+                className={`font-monda-bold ${letterStyle}`}
+                style={{ color: textColor }}
+              >
                 {name.charAt(0).toUpperCase()}
               </Text>
             )}
