@@ -46,7 +46,7 @@ export default function AppLayout() {
           clipped by `overflow-hidden`. TabTriggers only need a `name`; the
           hidden TabList below does the route registration. */}
       <View
-        className="absolute left-0 right-0 items-center"
+        className="absolute left-0 right-0 items-center z-10"
         style={{ bottom: insets.bottom }}
         pointerEvents="box-none"
       >
@@ -67,7 +67,7 @@ export default function AppLayout() {
           pushes the new-trade route. The wrapper is `box-none` so only the
           button itself catches touches. */}
       <View
-        className="absolute left-0 right-0 items-center"
+        className="absolute left-0 right-0 items-center z-20"
         style={{ bottom: insets.bottom + 16}}
         pointerEvents="box-none"
       >
@@ -87,8 +87,8 @@ export default function AppLayout() {
 
       {/* Bottom shadow gradient to make elements fade out */}
       <View
-        className="absolute left-0 right-0 h-32"
-        style={{ bottom: insets.bottom, backgroundColor: 'linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.5))' }}
+        className="absolute left-0 right-0 bottom-0 h-48"
+        style={{ experimental_backgroundImage: 'linear-gradient(180deg, transparent, rgba(0, 14, 25, 0.3))' }}
         pointerEvents="none"
       />
 
