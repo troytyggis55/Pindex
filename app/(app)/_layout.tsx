@@ -3,7 +3,7 @@ import { Pressable, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps } from 'expo-router/ui'
 import { useRouter } from 'expo-router'
-import { ArrowLeftRight, Compass, User, type LucideIcon } from 'lucide-react-native'
+import { ArrowLeftRight, Compass, Home, type LucideIcon } from 'lucide-react-native'
 import { Colors } from '@/constants/theme'
 
 const TRADE_BUTTON_SIZE = 72
@@ -53,12 +53,12 @@ export default function AppLayout() {
         <View
           className="w-64 h-16 flex-row items-stretch bg-deep-black rounded-4xl overflow-hidden"
         >
-          <TabTrigger name="explore" asChild>
-            <NavTabButton icon={Compass} isLeftSide />
-          </TabTrigger>
-
           <TabTrigger name="collection" asChild>
-            <NavTabButton icon={User} isLeftSide={false} />
+            <NavTabButton icon={Home} isLeftSide />
+          </TabTrigger>
+          
+          <TabTrigger name="explore" asChild>
+            <NavTabButton icon={Compass} isLeftSide={false} />
           </TabTrigger>
         </View>
       </View>

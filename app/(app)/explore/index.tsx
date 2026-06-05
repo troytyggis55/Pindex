@@ -28,21 +28,13 @@ export default function ExploreScreen() {
     <View className="flex-1 bg-off-white">
       {/* Header */}
       <View className="px-4 pt-4 pb-3">
-        <View className="flex-row justify-between items-center mb-[14px]">
-          <Text className="font-monda-bold text-[28px] text-deep-black">Explore</Text>
-          {tab === 'pins' && (
-            <TouchableOpacity
-              onPress={() => router.push('/pins/new')}
-              className="flex-row items-center gap-1.5 bg-deep-black px-3.5 py-2 rounded-btn"
-            >
-              <Plus size={15} color="white" strokeWidth={2.5} />
-              <Text className="font-monda-bold text-[13px] text-white">New pin</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <Text className="font-monda-bold text-[28px] text-deep-black">Explore</Text>
+        
+        {/* Tab chips */}
+        <TabBar tabs={TABS} active={tab} onChange={(key) => { setTab(key); setQuery('') }} equalWidth className='mb-3' />
 
         {/* Search bar */}
-        <View className="flex-row items-center bg-gray-100 rounded-btn px-3 mb-3 gap-2">
+        <View className="flex-row items-center bg-gray-100 rounded-btn px-3 gap-2">
           <Search size={16} color={Colors.dark.muted} strokeWidth={2} />
           <TextInput
             value={query}
@@ -52,9 +44,6 @@ export default function ExploreScreen() {
             className="flex-1 font-monda text-sm text-deep-black py-[10px]"
           />
         </View>
-
-        {/* Tab chips */}
-        <TabBar tabs={TABS} active={tab} onChange={(key) => { setTab(key); setQuery('') }} />
       </View>
 
 

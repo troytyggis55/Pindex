@@ -20,6 +20,7 @@ export type TabBarProps<T extends string> = {
    * Ignored for `'segmented'` — tabs always fill equal width there.
    */
   equalWidth?: boolean
+  className?: string
 }
 
 /**
@@ -34,14 +35,14 @@ export function TabBar<T extends string>({
   onChange,
   variant = 'chips',
   equalWidth = false,
+  className
 }: TabBarProps<T>) {
   if (variant === 'segmented') {
     return (
       <View
-        className="flex-row rounded-xl mb-5"
+        className={`flex-row rounded-xl mb-5 ${className}`}
         style={{ backgroundColor: '#f0f0ee', borderRadius: Radius.btn, padding: 3 }}
-      >
-        {tabs.map(({ key, label }) => (
+      > {tabs.map(({ key, label }) => (
           <TouchableOpacity
             key={key}
             onPress={() => onChange(key)}
@@ -70,7 +71,7 @@ export function TabBar<T extends string>({
 
   // chips variant
   return (
-    <View className="flex-row gap-2">
+    <View className={`flex-row gap-2 ${className ?? ''}`}>
       {tabs.map(({ key, label }) => (
         <TouchableOpacity
           key={key}
