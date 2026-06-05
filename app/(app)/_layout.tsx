@@ -3,7 +3,7 @@ import { Pressable, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps } from 'expo-router/ui'
 import { useRouter } from 'expo-router'
-import { ArrowLeftRight, Compass, Home, type LucideIcon } from 'lucide-react-native'
+import { ArrowUpDown, Compass, Home, type LucideIcon } from 'lucide-react-native'
 import { Colors } from '@/constants/theme'
 
 const TRADE_BUTTON_SIZE = 72
@@ -80,7 +80,7 @@ export default function AppLayout() {
             className="items-center justify-center rounded-full bg-pin-red border-4 border-deep-black/20"
             style={{ height: TRADE_BUTTON_SIZE, width: TRADE_BUTTON_SIZE }}
           >
-            <ArrowLeftRight size={24} color={Colors.offWhite} strokeWidth={2.5} />
+            <ArrowUpDown size={24} color={Colors.offWhite} strokeWidth={2.5} />
           </View>
         </TouchableOpacity>
       </View>

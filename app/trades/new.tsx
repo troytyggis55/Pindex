@@ -5,10 +5,11 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { X, ArrowLeftRight } from 'lucide-react-native'
+import { X, ArrowUpDown, Plus, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { UserSearchModal, type Partner } from '@/components/ui/user-search-modal'
+import { UserCard } from '@/components/ui/user-card'
 import { TradePinCard } from '@/components/ui/trade-pin-card'
 import { AddPinButton } from '@/components/ui/add-pin-button'
 import { PinSearchModal } from '@/components/ui/pin-search-modal'
@@ -16,7 +17,7 @@ import type { TradePinOption } from '@/types'
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function NewTradeScreen() {
-  const { session } = useAuth()
+  const { session, profile } = useAuth()
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
@@ -100,7 +101,7 @@ export default function NewTradeScreen() {
     router.back()
   }
 
-  const username = session?.user.email?.split('@')[0] ?? 'You'
+  const username = profile?.username ?? session?.user.email?.split('@')[0] ?? 'You'
 
   return (
     <View className="flex-1 bg-deep-black">
@@ -127,52 +128,57 @@ export default function NewTradeScreen() {
         className="flex-1 px-4 pb-4"
         style={{ paddingTop: insets.top + 64 }}
       >
-        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[10px]">
-          TRADING PARTNER
-        </Text>
-
-        {/* Partner name — tap to change */}
-        <TouchableOpacity
-          onPress={() => setPartnerModalVisible(true)}
-          className="mb-5"
-        >
-          {partner ? (
-            <>
-              <Text className="font-monda-bold text-2xl text-white">
-                {partner.type === 'profile' ? `@${partner.name}` : partner.name}
-              </Text>
-              {partner.type === 'contact' && (
-                <Text className="font-monda text-xs text-white/45 mt-0.5">
-                  Not on Pindex
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text className="font-monda text-base text-white/30">
-              Tap to select trading partner...
+        {/* Partner card — tap to change */}
+        {partner ? (
+          <UserCard
+            id={partner.type === 'profile' ? partner.id : partner.name}
+            username={partner.name}
+            avatarUrl={partner.type === 'profile' ? partner.avatarUrl : null}
+            atPrefix={partner.type === 'profile'}
+            subtitle={partner.type === 'contact' ? 'Not on Pindex' : undefined}
+            onPress={() => setPartnerModalVisible(true)}
+            showChevron
+          />
+        ) : (
+          <TouchableOpacity
+            onPress={() => setPartnerModalVisible(true)}
+            className="flex-row items-center gap-3 bg-white/[0.06] rounded-card p-3.5 border border-dashed border-white/20"
+          >
+            <View className="w-10 h-10 rounded-full bg-white/10 items-center justify-center">
+              <Plus size={20} color="rgba(255,255,255,0.5)" strokeWidth={2.5} />
+            </View>
+            <Text className="flex-1 font-monda text-[15px] text-white/40">
+              Tap to select trading partner
             </Text>
-          )}
-        </TouchableOpacity>
+            <ChevronRight size={16} color="rgba(255,255,255,0.4)" strokeWidth={2} />
+          </TouchableOpacity>
+        )}
 
-        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px]">
-          THEIR PINS
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-4 items-start">
-            {receivedPins.map(p => (
-              <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'received')} />
-            ))}
-            {activeSearch !== 'received' && (
-              <AddPinButton onPress={() => openSearch('received')} />
-            )}
-          </View>
-        </ScrollView>
+        <View className="flex-1 justify-center p-4">
+          <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px] text-center">
+            THEIR PINS
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          >
+            <View className="flex-row gap-4 items-start">
+              {receivedPins.map(p => (
+                <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'received')} />
+              ))}
+              {activeSearch !== 'received' && (
+                <AddPinButton onPress={() => openSearch('received')} />
+              )}
+            </View>
+          </ScrollView>
+        </View>
       </View>
 
       {/* ── POKEBALL DIVIDER — hidden during pin search ── */}
       {activeSearch === null && (
         <View className="h-16 items-center justify-center z-10">
-          <View className="absolute left-0 right-0 h-px bg-white/10" />
+          <View className="absolute left-0 right-0 h-2 bg-white/20" />
           <TouchableOpacity
             onPress={submit}
             disabled={submitting}
@@ -188,7 +194,7 @@ export default function NewTradeScreen() {
           >
             {submitting
               ? <ActivityIndicator color="#fff" size="small" />
-              : <ArrowLeftRight size={22} color="#fff" strokeWidth={2.5} />
+              : <ArrowUpDown size={22} color="#fff" strokeWidth={2.5} />
             }
           </TouchableOpacity>
         </View>
@@ -199,19 +205,32 @@ export default function NewTradeScreen() {
         className="flex-1 pt-4 px-4"
         style={{ paddingBottom: insets.bottom + 24 }}
       >
-        <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px]">
-          YOUR PINS — @{username}
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row gap-4 items-start">
-            {gavePins.map(p => (
-              <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'gave')} />
-            ))}
-            {activeSearch !== 'gave' && (
-              <AddPinButton onPress={() => openSearch('gave')} />
-            )}
-          </View>
-        </ScrollView>
+        <View className="flex-1 justify-center">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          >
+            <View className="flex-row gap-4 items-start">
+              {gavePins.map(p => (
+                <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'gave')} />
+              ))}
+              {activeSearch !== 'gave' && (
+                <AddPinButton onPress={() => openSearch('gave')} />
+              )}
+            </View>
+          </ScrollView>
+          <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px] text-center">
+            YOUR PINS
+          </Text>
+        </View>
+
+        {/* Your card — bottom edge of the pokeball */}
+        <UserCard
+          id={session?.user.id ?? 'you'}
+          username={username}
+          avatarUrl={profile?.avatar_url}
+        />
       </View>
 
       {/* ── PIN SEARCH ── */}

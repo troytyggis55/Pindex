@@ -7,7 +7,7 @@ import { ModalCard } from '@/components/ui/modal-card'
 import { UserCard } from '@/components/ui/user-card'
 
 export type Partner =
-  | { type: 'profile'; id: string; name: string }
+  | { type: 'profile'; id: string; name: string; avatarUrl?: string | null }
   | { type: 'contact'; name: string }
 
 type ProfileResult = { id: string; username: string; avatar_url: string | null }
@@ -103,7 +103,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
                   id={p.id}
                   username={p.username}
                   avatarUrl={p.avatar_url}
-                  onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
+                  onPress={() => handle({ type: 'profile', id: p.id, name: p.username, avatarUrl: p.avatar_url })}
                   card={false}
                 />
               ))}
@@ -127,7 +127,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
                   id={p.id}
                   username={p.username}
                   avatarUrl={p.avatar_url}
-                  onPress={() => handle({ type: 'profile', id: p.id, name: p.username })}
+                  onPress={() => handle({ type: 'profile', id: p.id, name: p.username, avatarUrl: p.avatar_url })}
                   card={false}
                 />
               ))}
