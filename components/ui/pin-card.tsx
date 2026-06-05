@@ -51,7 +51,14 @@ export function PinCard({
   const textColor = onWhite >= onBlack ? "white" : "black";
 
 
-  const styleClass = size === "medium" ? "p-[4px] border-3" : "p-0 border-2";
+  // For 'medium' the colored ring sits off the image (4px gap), so the border
+  // lives on the outer ring. For the flush sizes ('small'/'large') a separate
+  // bordered ring + clip view requires two circular arcs to align sub-pixel —
+  // which they don't, leaking the screen bg through as a white sliver. So put
+  // the border directly on the image-clipping view: one arc, no gap.
+  const hasGap = size === "medium";
+  const outerClass = hasGap ? "p-[4px] border-3" : "p-0";
+  const innerClass = hasGap ? "" : "border-2";
   const letterStyle = size === "medium" ? "text-[26px]" : "text-[14px]";
 
   return (
@@ -77,7 +84,7 @@ export function PinCard({
 
         {/* Outer ring: colored border with padding so it sits off the image */}
         <View
-          className={`items-center justify-center shadow-md ${styleClass}`}
+          className={`items-center justify-center shadow-md ${outerClass}`}
           style={{
             width: CIRCLE_SIZE,
             height: CIRCLE_SIZE,
@@ -85,12 +92,13 @@ export function PinCard({
             borderColor: borderColor,
           }}
         >
-          {/* Inner view clips image to circle */}
+          {/* Inner view clips image to circle (and carries the border when flush) */}
           <View
-            className="overflow-hidden items-center justify-center flex-1 w-full"
+            className={`overflow-hidden items-center justify-center flex-1 w-full ${innerClass}`}
             style={{
               borderRadius: CIRCLE_SIZE / 2,
               backgroundColor: borderColor,
+              borderColor: borderColor,
             }}
           >
             {imageUrl ? (

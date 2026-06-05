@@ -8,7 +8,7 @@ export type PinStackProps = {
 }
 
 /** How far each card slides under the previous one. */
-const OVERLAP = 22
+const OVERLAP = 10
 /** Show at most this many cards before collapsing the rest into a +N badge. */
 const MAX_VISIBLE = 3
 
