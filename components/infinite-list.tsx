@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { Text, FlatList, ActivityIndicator, RefreshControl, type FlatListProps } from 'react-native'
+import { Text, View, FlatList, ActivityIndicator, RefreshControl, type FlatListProps, type ListRenderItem } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useInfiniteQuery } from '@/hooks/use-infinite-query'
@@ -20,12 +20,18 @@ interface InfiniteListProps<T> extends PassthroughProps<T> {
 }
 
 // TODO: When doing search, we want the already loaded pins to be filterered properly, while the remaing non loaded pins should be fetched in the backend with a loading icon.
+// Sentinel id prefix for the invisible cells used to pad a short last row so
+// real items keep their exact 1/numColumns width and stay left-aligned.
+const SPACER_PREFIX = '__spacer_'
+
 export function InfiniteList<T extends { id: string }>({
   buildQuery,
   pageSize,
   refetchOnFocus = true,
   emptyText = 'Nothing found.',
   keyExtractor,
+  numColumns,
+  renderItem,
   ...flatListProps
 }: InfiniteListProps<T>) {
   const { items, loading, loadingMore, refreshing, hasMore, load, refresh, loadMore } =
@@ -37,9 +43,29 @@ export function InfiniteList<T extends { id: string }>({
     }, [refetchOnFocus, load])
   )
 
+  // Pad the last row with spacer cells so a partial row fills from the left
+  // instead of stretching its items across the full width.
+  const cols = numColumns ?? 1
+  const remainder = cols > 1 ? items.length % cols : 0
+  const data =
+    remainder === 0
+      ? items
+      : [
+          ...items,
+          ...Array.from(
+            { length: cols - remainder },
+            (_, i) => ({ id: `${SPACER_PREFIX}${i}` } as T)
+          ),
+        ]
+
+  const renderCell: ListRenderItem<T> = (info) =>
+    info.item.id.startsWith(SPACER_PREFIX) ? <View className="flex-1" /> : renderItem?.(info) ?? null
+
   return (
     <FlatList
-      data={items}
+      data={data}
+      numColumns={numColumns}
+      renderItem={renderCell}
       onEndReached={loadMore}
       onEndReachedThreshold={0.5}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
