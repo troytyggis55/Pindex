@@ -11,7 +11,7 @@ import ColorPicker, { Panel1, HueSlider } from 'reanimated-color-picker'
 import { supabase } from '@/lib/supabase'
 import { pickAndUpload } from '@/lib/upload'
 import { useAuth } from '@/context/auth'
-import { OrgCard } from '@/components/ui/org-card'
+import { OrgAvatar } from '@/components/ui/org-avatar'
 import { PinCard } from '@/components/ui/pin-card'
 import { getContrastColor } from '@/lib/color'
 import { Colors, Radius, Spacing } from '@/constants/theme'
@@ -251,7 +251,7 @@ export default function OrgAdminScreen() {
       <View style={{ alignItems: 'center', marginBottom: 28 }}>
         <TouchableOpacity onPress={handleLogoUpload} disabled={uploadingLogo} activeOpacity={0.8}>
           <View style={{ position: 'relative' }}>
-            <OrgCard name={org.name} logoUrl={org.logo_url} size={72} />
+            <OrgAvatar name={org.name} logoUrl={org.logo_url} color={org.color} size={72} />
             <View style={{
               position: 'absolute', bottom: 0, right: 0,
               width: 24, height: 24, borderRadius: 12,

@@ -6,7 +6,7 @@ import { ChevronLeft, Users, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
-import { OrgCard } from '@/components/ui/org-card'
+import { OrgAvatar } from '@/components/ui/org-avatar'
 import { UserCard } from '@/components/ui/user-card'
 import { Colors } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
@@ -171,7 +171,7 @@ export default function PinDetailScreen() {
           {/* Org badge + pin name */}
           <View className="items-center mb-5">
             <View className="flex-row items-center gap-1.5 mb-2">
-              <OrgCard name={orgName} logoUrl={pin.organization?.logo_url} size={20} />
+              <OrgAvatar name={orgName} logoUrl={pin.organization?.logo_url} color={pin.organization?.color} size={20} />
               <Text className="font-monda text-[13px] text-gray-500">
                 {orgName}
               </Text>

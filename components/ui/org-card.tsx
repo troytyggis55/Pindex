@@ -1,46 +1,45 @@
-import { View, Text, Image } from 'react-native'
+import { Text, TouchableOpacity, View } from 'react-native'
+import { OrgAvatar } from '@/components/ui/org-avatar'
 import { Colors } from '@/constants/theme'
+import type { Organization } from '@/types'
 
 interface OrgCardProps {
-  name: string
-  logoUrl?: string | null
-  color?: string | null
-  size?: number
+  org: Organization
+  onPress?: () => void
 }
 
 /**
- * Small circular org badge — shows logo if available, else org initial.
- * The circle background uses the org's color (fallback to Colors.orgFallback).
+ * Full org row card — white card with the org's color as its border,
+ * showing the org logo and name. Pressable when onPress is provided.
+ * For just the circular logo, use OrgAvatar.
  */
-export function OrgCard({ name, logoUrl, color, size = 28 }: OrgCardProps) {
-  const bg = color ?? Colors.orgFallback
+export function OrgCard({ org, onPress }: OrgCardProps) {
+  const borderColor = org.color ?? Colors.orgFallback
+  const content = (
+    <>
+      <OrgAvatar name={org.name} logoUrl={org.logo_url} color={org.color} size={40} />
+      <Text className="font-monda-bold text-[15px] text-deep-black flex-1">{org.name}</Text>
+    </>
+  )
+
+  if (!onPress) {
+    return (
+      <View
+        className="flex-row items-center gap-3 bg-white rounded-card p-3.5 border-2"
+        style={{ borderColor }}
+      >
+        {content}
+      </View>
+    )
+  }
 
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: bg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-      }}
+    <TouchableOpacity
+      onPress={onPress}
+      className="flex-row items-center gap-3 bg-white rounded-card p-3.5 border-2"
+      style={{ borderColor }}
     >
-      {logoUrl ? (
-        <Image source={{ uri: logoUrl }} style={{ width: size, height: size }} resizeMode="cover" />
-      ) : (
-        <Text
-          style={{
-            color: '#fff',
-            fontSize: size * 0.4,
-            fontFamily: 'Monda_700Bold',
-            lineHeight: size * 0.5,
-          }}
-        >
-          {name.charAt(0).toUpperCase()}
-        </Text>
-      )}
-    </View>
+      {content}
+    </TouchableOpacity>
   )
 }

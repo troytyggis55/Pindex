@@ -5,61 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChevronLeft, Plus } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
-import { PinCard } from '@/components/ui/pin-card'
-import { Colors, Radius, Spacing } from '@/constants/theme'
-
-type CreatedPin = {
-  id: string
-  name: string
-  image_url: string | null
-  organization_id: string | null
-  org_claimed_at: string | null
-  organization: { name: string; logo_url: string | null } | null
-}
-
-function PinGrid({ pins, onPress }: { pins: CreatedPin[]; onPress: (id: string) => void }) {
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.screenPad }}>
-      {pins.map(pin => (
-        <View key={pin.id} style={{ width: '33.33%', alignItems: 'center', marginBottom: 16 }}>
-          <PinCard
-            id={pin.id}
-            name={pin.name}
-            imageUrl={pin.image_url}
-            orgName={pin.organization?.name ?? 'Independent'}
-            orgLogoUrl={pin.organization?.logo_url}
-            isConfirmed={pin.org_claimed_at != null}
-            onPress={() => onPress(pin.id)}
-          />
-        </View>
-      ))}
-    </View>
-  )
-}
-
-function SectionHeader({ label, count }: { label: string; count: number }) {
-  return (
-    <View style={{
-      flexDirection: 'row', alignItems: 'center', gap: 8,
-      paddingHorizontal: Spacing.screenPad, paddingTop: 20, paddingBottom: 12,
-    }}>
-      <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 15, color: Colors.deepBlack }}>{label}</Text>
-      <View style={{
-        backgroundColor: Colors.deepBlack,
-        paddingHorizontal: 8, paddingVertical: 2,
-        borderRadius: 10,
-      }}>
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 11, color: '#fff' }}>{count}</Text>
-      </View>
-    </View>
-  )
-}
+import { SectionHeader } from '@/components/ui/section-header'
+import { PinGrid } from '@/components/ui/pin-grid'
+import { Colors } from '@/constants/theme'
+import type { PinWithOrg } from '@/types'
 
 export default function CreatedPinsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { session } = useAuth()
-  const [pins, setPins] = useState<CreatedPin[]>([])
+  const [pins, setPins] = useState<PinWithOrg[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -67,10 +22,10 @@ export default function CreatedPinsScreen() {
     if (!session?.user) return
     const { data } = await supabase
       .from('pins')
-      .select('id, name, image_url, organization_id, org_claimed_at, organization:organizations(name, logo_url)')
+      .select('*, organization:organizations(*)')
       .eq('created_by', session.user.id)
       .order('created_at', { ascending: false })
-    if (data) setPins(data as CreatedPin[])
+    if (data) setPins(data as PinWithOrg[])
     setLoading(false)
     setRefreshing(false)
   }, [session?.user.id])
@@ -85,46 +40,37 @@ export default function CreatedPinsScreen() {
   const claimed = pins.filter(p => p.org_claimed_at !== null)
 
   if (loading) {
-    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.offWhite }}><ActivityIndicator /></View>
+    return (
+      <View className="flex-1 justify-center items-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.offWhite }}>
+    <View className="flex-1 bg-off-white">
       {/* Header */}
-      <View style={{
-        paddingHorizontal: Spacing.screenPad,
-        paddingTop: insets.top + 16,
-        paddingBottom: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
+      <View
+        className="flex-row items-center justify-between px-4 pb-3"
+        style={{ paddingTop: insets.top + 16 }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          className="flex-row items-center gap-1"
+          hitSlop={8}
         >
           <ChevronLeft size={20} color={Colors.deepBlack} strokeWidth={2} />
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 14, color: Colors.deepBlack }}>Back</Text>
+          <Text className="font-monda-bold text-sm text-deep-black">Back</Text>
         </TouchableOpacity>
 
-        <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 20, color: Colors.deepBlack }}>
-          My Created Pins
-        </Text>
+        <Text className="font-monda-bold text-xl text-deep-black">My Registered Pins</Text>
 
         <TouchableOpacity
           onPress={() => router.push('/pins/new')}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: Colors.deepBlack,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: Radius.btn,
-          }}
+          className="flex-row items-center gap-1.5 bg-deep-black px-3 py-2 rounded-btn"
         >
-          <Plus size={14} color="#fff" strokeWidth={2.5} />
-          <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>New</Text>
+          <Plus size={14} color={Colors.offWhite} strokeWidth={2.5} />
+          <Text className="font-monda-bold text-[13px] text-off-white">New</Text>
         </TouchableOpacity>
       </View>
 
@@ -133,20 +79,15 @@ export default function CreatedPinsScreen() {
         contentContainerStyle={{ paddingBottom: 48 }}
       >
         {pins.length === 0 ? (
-          <View style={{ alignItems: 'center', marginTop: 60, gap: 12 }}>
-            <Text style={{ fontFamily: 'Monda_400Regular', fontSize: 14, color: Colors.dark.muted }}>
+          <View className="items-center mt-[60px] gap-3">
+            <Text className="font-monda text-sm text-gray-500">
               You haven't created any pins yet.
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/pins/new')}
-              style={{
-                backgroundColor: Colors.deepBlack,
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: Radius.btn,
-              }}
+              className="bg-deep-black px-5 py-2.5 rounded-btn"
             >
-              <Text style={{ fontFamily: 'Monda_700Bold', fontSize: 13, color: '#fff' }}>Create your first pin</Text>
+              <Text className="font-monda-bold text-[13px] text-off-white">Create your first pin</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -154,13 +95,13 @@ export default function CreatedPinsScreen() {
             {unclaimed.length > 0 && (
               <>
                 <SectionHeader label="Unclaimed" count={unclaimed.length} />
-                <PinGrid pins={unclaimed} onPress={goToPin} />
+                <PinGrid pins={unclaimed} onPressPin={goToPin} />
               </>
             )}
             {claimed.length > 0 && (
               <>
                 <SectionHeader label="Claimed" count={claimed.length} />
-                <PinGrid pins={claimed} onPress={goToPin} />
+                <PinGrid pins={claimed} onPressPin={goToPin} />
               </>
             )}
           </>

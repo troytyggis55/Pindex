@@ -28,7 +28,7 @@ export default function ExploreScreen() {
     <View className="flex-1 bg-off-white">
       {/* Header */}
       <View className="px-4 pt-4 pb-3">
-        <Text className="font-monda-bold text-[28px] text-deep-black">Explore</Text>
+        <Text className="font-monda-bold text-[28px] text-deep-black mb-3">Explore</Text>
         
         {/* Tab chips */}
         <TabBar tabs={TABS} active={tab} onChange={(key) => { setTab(key); setQuery('') }} equalWidth className='mb-3' />

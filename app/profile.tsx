@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Camera, Pencil, ChevronRight } from 'lucide-react-native'
+import { Camera, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickAndUpload } from '@/lib/upload'
@@ -118,13 +118,12 @@ export default function ProfileScreen() {
         {hasCreatedPins && (
           <TouchableOpacity
             onPress={() => router.push('/admin/created-pins')}
-            className="flex-row items-center bg-white rounded-btn px-3.5 py-2.5 mb-3.5 gap-2"
+            className="flex-row items-center justify-center gap-2 border border-gray-300 rounded-btn p-3.5"
           >
             <Pencil size={16} color={Colors.dark.muted} strokeWidth={2} />
-            <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
-              Pins I've created
+            <Text className="font-monda-bold text-sm text-deep-black">
+              Pins I've registered
             </Text>
-            <ChevronRight size={14} color={Colors.dark.muted} strokeWidth={2} />
           </TouchableOpacity>
         )}
 
@@ -140,17 +139,11 @@ export default function ProfileScreen() {
               MY ORGANIZATIONS
             </Text>
             {adminOrgs.map(org => (
-              <TouchableOpacity
+              <OrgCard
                 key={org.id}
+                org={org}
                 onPress={() => router.push(`/admin/${org.id}`)}
-                className="bg-white rounded-card p-3.5 flex-row items-center gap-3"
-              >
-                <OrgCard name={org.name} logoUrl={org.logo_url} size={36} />
-                <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
-                  {org.name}
-                </Text>
-                <ChevronRight size={16} color={Colors.dark.muted} strokeWidth={2} />
-              </TouchableOpacity>
+              />
             ))}
           </View>
         ) : null}
