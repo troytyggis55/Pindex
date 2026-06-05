@@ -4,7 +4,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, Search } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { ModalCard } from '@/components/ui/modal-card'
-import { UserRow } from '@/components/ui/user-row'
+import { UserCard } from '@/components/ui/user-card'
 
 export type Partner =
   | { type: 'profile'; id: string; name: string }
@@ -98,7 +98,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
                 FOLLOWING
               </Text>
               {following.map(p => (
-                <UserRow
+                <UserCard
                   key={p.id}
                   id={p.id}
                   username={p.username}
@@ -122,7 +122,7 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
                 RESULTS
               </Text>
               {results.map(p => (
-                <UserRow
+                <UserCard
                   key={p.id}
                   id={p.id}
                   username={p.username}

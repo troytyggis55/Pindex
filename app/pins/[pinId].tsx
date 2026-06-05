@@ -6,8 +6,8 @@ import { ChevronLeft, Users, Pencil } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { StatusChipRow } from '@/components/ui/status-chip'
-import { OrgBadge } from '@/components/ui/org-badge'
-import { UserRow } from '@/components/ui/user-row'
+import { OrgCard } from '@/components/ui/org-card'
+import { UserCard } from '@/components/ui/user-card'
 import { Colors } from '@/constants/theme'
 import type { FlagKey } from '@/constants/theme'
 import type { PinWithOrg, UserPinFlags, WantToTrader } from '@/types'
@@ -171,7 +171,7 @@ export default function PinDetailScreen() {
           {/* Org badge + pin name */}
           <View className="items-center mb-5">
             <View className="flex-row items-center gap-1.5 mb-2">
-              <OrgBadge name={orgName} logoUrl={pin.organization?.logo_url} size={20} />
+              <OrgCard name={orgName} logoUrl={pin.organization?.logo_url} size={20} />
               <Text className="font-monda text-[13px] text-gray-500">
                 {orgName}
               </Text>
@@ -218,7 +218,7 @@ export default function PinDetailScreen() {
                 </Text>
               </View>
               {traders.map(t => (
-                <UserRow
+                <UserCard
                   key={t.user_id}
                   id={t.user_id}
                   username={t.profile.username}

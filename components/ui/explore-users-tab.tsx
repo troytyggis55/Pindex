@@ -3,7 +3,7 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { InfiniteList } from '@/components/infinite-list'
-import { UserRow } from '@/components/ui/user-row'
+import { UserCard } from '@/components/ui/user-card'
 import { Spacing } from '@/constants/theme'
 import type { ProfileSnap } from '@/types'
 
@@ -50,7 +50,7 @@ export function ExploreUsersTab({ query }: ExploreUsersTabProps) {
       emptyText="No users found."
       contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: Spacing.navOffset + 16, gap: 10 }}
       renderItem={({ item }) => (
-        <UserRow
+        <UserCard
           id={item.id}
           username={item.username}
           avatarUrl={item.avatar_url}

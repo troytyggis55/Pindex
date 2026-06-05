@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { InfiniteList } from '@/components/infinite-list'
-import { UserRow } from '@/components/ui/user-row'
+import { UserCard } from '@/components/ui/user-card'
 import { Spacing } from '@/constants/theme'
 import type { FollowingUser } from '@/types'
 
@@ -37,7 +37,7 @@ export function CollectionFollowingTab() {
       emptyText="Not following anyone yet."
       contentContainerStyle={{ padding: Spacing.screenPad, paddingBottom: Spacing.navOffset + 16, gap: 10 }}
       renderItem={({ item }) => (
-        <UserRow
+        <UserCard
           id={item.id}
           username={item.profile.username}
           avatarUrl={item.profile.avatar_url}

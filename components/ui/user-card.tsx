@@ -24,7 +24,7 @@ export interface UserRowProps {
   card?: boolean
 }
 
-export function UserRow({
+export function UserCard({
   username,
   avatarUrl,
   onPress,
@@ -37,7 +37,10 @@ export function UserRow({
   const showFollowBtn = onFollowToggle !== undefined
 
   const inner = (
-    <View className={`flex-row items-center gap-3 ${card ? 'bg-white rounded-card p-3' : 'py-3 border-b border-gray-100'}`}>
+    <View
+      className={`flex-row items-center gap-3 ${card ? 'bg-white rounded-card p-3.5 shadow-md' : 'py-3 border-b border-gray-100'}`}
+
+    >
       {/* Avatar */}
       <TouchableOpacity onPress={onPress} disabled={!onPress} activeOpacity={onPress ? 0.7 : 1}>
         <Avatar url={avatarUrl} username={username} size={40} />
@@ -45,7 +48,7 @@ export function UserRow({
 
       {/* Username */}
       <TouchableOpacity onPress={onPress} disabled={!onPress} activeOpacity={onPress ? 0.7 : 1} className="flex-1">
-        <Text className="font-monda-bold text-sm text-deep-black">
+        <Text className="font-monda-bold text-[15px] text-deep-black">
           @{username}
         </Text>
       </TouchableOpacity>

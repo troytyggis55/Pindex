@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router'
 import { Text, TouchableOpacity } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { InfiniteList } from '@/components/infinite-list'
-import { OrgBadge } from '@/components/ui/org-badge'
-import { Spacing } from '@/constants/theme'
+import { OrgCard } from '@/components/ui/org-card'
+import { Colors, Spacing } from '@/constants/theme'
 import type { Organization } from '@/types'
 
 export interface ExploreOrgsTabProps {
@@ -32,9 +32,10 @@ export function ExploreOrgsTab({ query }: ExploreOrgsTabProps) {
       renderItem={({ item }) => (
         <TouchableOpacity
           onPress={() => router.push(`/orgs/${item.id}`)}
-          className="flex-row items-center gap-3 bg-white rounded-card p-3.5"
+          className="flex-row items-center gap-3 bg-white rounded-card p-3.5 border-2"
+          style={{ borderColor: item.color ?? Colors.orgFallback }}
         >
-          <OrgBadge name={item.name} logoUrl={item.logo_url} size={40} />
+          <OrgCard name={item.name} logoUrl={item.logo_url} size={40} color={item.color} />
           <Text className="font-monda-bold text-[15px] text-deep-black flex-1">{item.name}</Text>
         </TouchableOpacity>
       )}

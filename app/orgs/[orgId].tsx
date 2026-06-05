@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { PinCard } from '@/components/ui/pin-card'
-import { OrgBadge } from '@/components/ui/org-badge'
+import { OrgCard } from '@/components/ui/org-card'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Spacing } from '@/constants/theme'
 import type { Organization, Pin } from '@/types'
@@ -60,7 +60,7 @@ export default function OrgDetailScreen() {
 
       {/* Org header */}
       <View className="flex-row items-center gap-3 mb-7">
-        <OrgBadge name={org.name} logoUrl={org.logo_url} size={48} />
+        <OrgCard name={org.name} logoUrl={org.logo_url} size={48} />
         <View>
           <Text className="font-monda-bold text-[24px] text-deep-black">{org.name}</Text>
           {org.color && (

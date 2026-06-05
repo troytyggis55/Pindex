@@ -1,7 +1,7 @@
 import { View, Text, Image } from 'react-native'
 import { Colors } from '@/constants/theme'
 
-interface Props {
+interface OrgCardProps {
   name: string
   logoUrl?: string | null
   color?: string | null
@@ -12,7 +12,7 @@ interface Props {
  * Small circular org badge — shows logo if available, else org initial.
  * The circle background uses the org's color (fallback to Colors.orgFallback).
  */
-export function OrgBadge({ name, logoUrl, color, size = 28 }: Props) {
+export function OrgCard({ name, logoUrl, color, size = 28 }: OrgCardProps) {
   const bg = color ?? Colors.orgFallback
 
   return (

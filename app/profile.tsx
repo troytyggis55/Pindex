@@ -6,7 +6,7 @@ import { Camera, Pencil, ChevronRight } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { pickAndUpload } from '@/lib/upload'
-import { OrgBadge } from '@/components/ui/org-badge'
+import { OrgCard } from '@/components/ui/org-card'
 import { Avatar } from '@/components/ui/avatar'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Colors } from '@/constants/theme'
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
                 onPress={() => router.push(`/admin/${org.id}`)}
                 className="bg-white rounded-card p-3.5 flex-row items-center gap-3"
               >
-                <OrgBadge name={org.name} logoUrl={org.logo_url} size={36} />
+                <OrgCard name={org.name} logoUrl={org.logo_url} size={36} />
                 <Text className="font-monda-bold text-[15px] text-deep-black flex-1">
                   {org.name}
                 </Text>
