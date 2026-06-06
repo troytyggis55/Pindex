@@ -1,6 +1,7 @@
 import '../global.css'
 import { useEffect } from 'react'
-import { Stack, useRouter, useSegments } from 'expo-router'
+import { View, ActivityIndicator } from 'react-native'
+import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/context/auth'
 import { useFonts, Monda_400Regular, Monda_700Bold } from '@expo-google-fonts/monda'
@@ -12,26 +13,47 @@ SplashScreen.preventAutoHideAsync()
 
 function RootLayoutNav() {
   const { session, profile, loading, profileLoading } = useAuth()
-  const segments = useSegments()
-  const router = useRouter()
+  const authed = !!session && !!profile
 
-  useEffect(() => {
-    if (loading || profileLoading) return
+  // Hold a splash until auth state is fully known so we never flash an auth
+  // screen first. The second clause keeps the splash up while the initial
+  // profile is being fetched for a known session; token refreshes keep
+  // `profile` set, so this never re-triggers once resolved.
+  if (loading || (!!session && !profile && profileLoading)) {
+    return (
+      <View className="flex-1 items-center justify-center bg-off-white">
+        <ActivityIndicator />
+      </View>
+    )
+  }
 
-    const inAuth = segments[0] === '(auth)'
-    const inApp = segments[0] === '(app)'
-    const onResetPassword = segments[1] === 'reset-password'
+  // Declarative guards replace imperative redirects: when `authed` flips false
+  // on sign-out, the protected screens (and their history) are removed, so the
+  // back gesture from login exits the app instead of re-entering a stale screen.
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={authed}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(app)" />
+        <Stack.Screen name="pins/[pinId]" />
+        <Stack.Screen name="pins/new" />
+        <Stack.Screen name="trades/[tradeId]" />
+        <Stack.Screen name="trades/new" />
+        <Stack.Screen name="users/[userId]" />
+        <Stack.Screen name="orgs/[orgId]" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="admin/[orgId]" />
+        <Stack.Screen name="admin/created-pins" />
+      </Stack.Protected>
 
-    if (!session) {
-      if (!inAuth) router.replace('/(auth)/login')
-    } else if (!profile) {
-      if (!onResetPassword) router.replace('/(auth)/complete-profile')
-    } else if (inAuth) {
-      if (!onResetPassword) router.replace('/(app)/collection')
-    }
-  }, [session, profile, loading, profileLoading])
+      <Stack.Protected guard={!authed}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
 
-  return <Stack screenOptions={{ headerShown: false }} />
+      {/* reset-password is intentionally unguarded: a recovery deep link creates
+          a session, so it must stay reachable in any auth state. */}
+    </Stack>
+  )
 }
 
 export default function RootLayout() {

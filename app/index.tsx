@@ -1,26 +1,7 @@
 import { Redirect } from 'expo-router'
-import { View, ActivityIndicator } from 'react-native'
-import { useAuth } from '@/context/auth'
 
+// Authed anchor for the root stack. The root layout only mounts this when the
+// user is fully authenticated, so it just forwards into the app tabs.
 export default function Index() {
-  const { session, profile, loading, profileLoading } = useAuth()
-
-  if (loading || profileLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    )
-  }
-
-  if (session && profile) {
-    return <Redirect href="/(app)/collection" />
-  }
-
-  // No session or incomplete profile — _layout.tsx handles the redirect
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator />
-    </View>
-  )
+  return <Redirect href="/(app)/collection" />
 }

@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Tabs, TabList, TabSlot, TabTrigger, TabTriggerSlotProps } from 'expo-router/ui'
 import { useRouter } from 'expo-router'
 import { ArrowUpDown, Compass, Home, type LucideIcon } from 'lucide-react-native'
-import { useAuth } from '@/context/auth'
 import { Colors } from '@/constants/theme'
 
 const TRADE_BUTTON_SIZE = 72
@@ -36,13 +35,6 @@ function NavTabButton({ icon: Icon, isFocused, isLeftSide, ...props }: NavTabBut
 export default function AppLayout() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const { session } = useAuth()
-
-  // On sign-out the session clears synchronously while the redirect to login
-  // still pending in the root effect. Don't render the protected tree (whose
-  // children read `session.user.id`) until a session exists.
-  if (!session) return null
-
   return (
     <Tabs>
       <View className="flex-1 bg-pin-red" style={{ paddingTop: insets.top }}>
