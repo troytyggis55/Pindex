@@ -2,15 +2,14 @@ import { useCallback, useState } from 'react'
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ChevronLeft, ArrowLeftRight } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight, ArrowLeftRight, Check, ArrowUpDown } from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
-import { Avatar } from '@/components/ui/avatar'
+import { UserCard } from '@/components/ui/user-card'
+import { PinStack } from '@/components/ui/pin-stack'
 import { TradeStatusBadge } from '@/components/ui/trade-status-badge'
-import { TradeSide } from '@/components/ui/trade-side'
-import type { TradeDetail } from '@/types'
-
-const HEADER_HEIGHT = 220
+import { Colors } from '@/constants/theme'
+import type { TradeDetail, TradeDetailItem } from '@/types'
 
 export default function TradeDetailScreen() {
   const { tradeId } = useLocalSearchParams<{ tradeId: string }>()
@@ -55,6 +54,11 @@ export default function TradeDetailScreen() {
     setConfirming(false)
   }
 
+  const promptConfirm = () => Alert.alert('Confirm trade', 'Confirm that this trade happened?', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Confirm', onPress: confirmTrade },
+  ])
+
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-off-white">
@@ -76,14 +80,12 @@ export default function TradeDetailScreen() {
   const isReceiver = trade.receiver_profile_id === myId
   const canConfirm = isReceiver && trade.status === 'unconfirmed'
 
-  // Viewer-centric framing: "you" on the left, the other party on the right.
+  // Viewer-centric framing: "you" at the bottom, the other party at the top.
   const me = isInitiator ? trade.initiator : trade.receiver_profile
-  const partnerName = isInitiator
-    ? (trade.receiver_profile?.username ?? trade.receiver_contact?.name ?? '?')
-    : trade.initiator.username
-  const partnerAvatarUrl = isInitiator
-    ? trade.receiver_profile?.avatar_url ?? null
-    : trade.initiator.avatar_url
+  const partnerProfile = isInitiator ? trade.receiver_profile : trade.initiator
+  const partnerContact = isInitiator ? trade.receiver_contact : null
+  const partnerName = partnerProfile?.username ?? partnerContact?.name ?? '?'
+  const partnerIsContact = !partnerProfile && !!partnerContact
 
   // Items from the viewer's perspective
   const gave = trade.trade_items.filter(t => isInitiator ? t.side === 'gave' : t.side === 'received')
@@ -91,76 +93,135 @@ export default function TradeDetailScreen() {
 
   const openPin = (pinId: string) => router.push(`/pins/${pinId}`)
 
+  const myName = me?.username ?? 'You'
+
+  // Tappable text row mirroring new.tsx's pin lists, but read-only and navigating.
+  const renderPinRow = (item: TradeDetailItem) => (
+    <TouchableOpacity
+      key={item.id}
+      onPress={() => openPin(item.pin.id)}
+      className="flex-row items-center justify-between py-2.5 border-b border-gray-100"
+    >
+      <Text numberOfLines={1} className="flex-1 font-monda text-[14px] text-deep-black">
+        {item.pin.name}
+      </Text>
+      <ChevronRight size={15} color={Colors.dark.muted} strokeWidth={2} />
+    </TouchableOpacity>
+  )
+
   return (
     <View className="flex-1 bg-off-white">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: canConfirm ? 120 : 40 }}>
-        {/* Header band — the two parties facing each other */}
-        <View style={{ height: HEADER_HEIGHT }} className="bg-deep-black">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="absolute left-4 flex-row items-center gap-1 bg-white/15 px-3 py-1.5 rounded-btn"
-            style={{ top: insets.top + 12 }}
-          >
-            <ChevronLeft size={16} color="#fff" strokeWidth={2.5} />
-            <Text className="font-monda-bold text-[13px] text-white">Back</Text>
-          </TouchableOpacity>
 
-          <View className="absolute right-4" style={{ top: insets.top + 12 }}>
-            <TradeStatusBadge status={trade.status} />
+      {/* Back button */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        className="absolute left-4 z-[30] w-9 h-9 rounded-full bg-black/[0.06] items-center justify-center"
+        style={{ top: insets.top + 14 }}
+      >
+        <ChevronLeft size={18} color={Colors.deepBlack} strokeWidth={2.5} />
+      </TouchableOpacity>
+
+      {/* Status badge */}
+      <View className="absolute right-4 z-[30]" style={{ top: insets.top + 16 }}>
+        <TradeStatusBadge status={trade.status} />
+      </View>
+
+      {/* ── TOP HALF — trading partner ── */}
+      <View className="flex-1 px-4 pb-8" style={{ paddingTop: insets.top + 64 }}>
+        {trade.confirmed_at && (
+          <Text className="font-monda text-[11px] text-gray-400 text-center mb-3">
+            Confirmed {new Date(trade.confirmed_at).toLocaleDateString()}
+          </Text>
+        )}
+
+        {/* Partner card */}
+        <UserCard
+          id={partnerProfile?.id ?? partnerName}
+          username={partnerName}
+          avatarUrl={partnerProfile?.avatar_url}
+          atPrefix={!partnerIsContact}
+          subtitle={partnerIsContact ? 'Not on Pindex' : undefined}
+          onPress={partnerProfile ? () => router.push(`/users/${partnerProfile.id}`) : undefined}
+          showChevron={!!partnerProfile}
+        />
+
+        <View className="flex-1">
+          <Text className="font-monda-bold text-[10px] text-gray-400 tracking-[1.4px] mb-[14px] mt-2 text-center">
+            THEY GAVE
+          </Text>
+
+          <View className="items-center justify-center">
+            <PinStack pins={received.map(i => i.pin)} size="medium" showEmptyPlaceholder={false} onPinPress={openPin} />
           </View>
 
-          <View className="flex-1 flex-row items-center justify-center gap-6" style={{ paddingTop: insets.top + 24 }}>
-            <View className="items-center gap-2 w-20">
-              <Avatar url={me?.avatar_url} username={me?.username ?? 'You'} size={64} />
-              <Text numberOfLines={1} className="font-monda-bold text-[13px] text-white">You</Text>
-            </View>
-
-            <ArrowLeftRight size={22} color="rgba(255,255,255,0.6)" strokeWidth={2} />
-
-            <View className="items-center gap-2 w-20">
-              <Avatar url={partnerAvatarUrl} username={partnerName} size={64} />
-              <Text numberOfLines={1} className="font-monda-bold text-[13px] text-white">{partnerName}</Text>
-            </View>
-          </View>
+          <ScrollView className="flex-1 mt-3" showsVerticalScrollIndicator={true}>
+            {received.length === 0 ? (
+              <Text className="font-monda text-[13px] text-gray-400 text-center mt-2">Nothing</Text>
+            ) : (
+              received.map(renderPinRow)
+            )}
+          </ScrollView>
         </View>
+      </View>
 
-        {/* Content */}
-        <View className="px-4 pt-6 gap-7">
-          {trade.confirmed_at && (
-            <Text className="font-monda text-[13px] text-gray-500 text-center">
-              Confirmed {new Date(trade.confirmed_at).toLocaleDateString()}
-            </Text>
-          )}
-
-          <TradeSide label="You gave" items={gave} onPinPress={openPin} />
-
-          <View className="h-px bg-[#e8e8e6]" />
-
-          <TradeSide label="You received" items={received} onPinPress={openPin} />
-        </View>
-      </ScrollView>
-
-      {/* Confirm action bar — fixed at bottom */}
-      {canConfirm && (
-        <View
-          className="absolute bottom-0 left-0 right-0 bg-off-white border-t border-t-[#e8e8e6] px-4 pt-3"
-          style={{ paddingBottom: insets.bottom + 12 }}
-        >
+      {/* ── POKEBALL DIVIDER ── */}
+      <View className="h-16 items-center justify-center z-10">
+        <View className="absolute left-0 right-0 h-1 bg-gray-200" />
+        {canConfirm ? (
           <TouchableOpacity
-            onPress={() => Alert.alert('Confirm trade', 'Confirm that this trade happened?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Confirm', onPress: confirmTrade },
-            ])}
+            onPress={promptConfirm}
             disabled={confirming}
-            className="bg-deep-black py-[14px] rounded-btn items-center"
+            activeOpacity={0.85}
+            className="w-16 h-16 rounded-full bg-pin-red items-center justify-center border-[3px] border-white"
+            style={{
+              shadowColor: '#CD0808',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.4,
+              shadowRadius: 16,
+              elevation: 10,
+            }}
           >
             {confirming
-              ? <ActivityIndicator color="#fff" />
-              : <Text className="font-monda-bold text-sm text-white">Confirm trade</Text>
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <Check size={24} color="#fff" strokeWidth={2.5} />
             }
           </TouchableOpacity>
+        ) : (
+          <View className="w-16 h-16 rounded-full bg-white items-center justify-center border-[3px] border-gray-100 ">
+            {trade.status === 'confirmed'
+              ? <Check size={22} color={Colors.deepBlack} strokeWidth={2.5} />
+              : <ArrowUpDown size={22} color={Colors.dark.muted} strokeWidth={2} />
+            }
+          </View>
+        )}
+      </View>
+
+      {/* ── BOTTOM HALF — current user ── */}
+      <View className="flex-1 pt-8 px-4" style={{ paddingBottom: insets.bottom + 24 }}>
+        <View className="flex-1">
+          <View className="items-center justify-center">
+            <PinStack pins={gave.map(i => i.pin)} size="medium" showEmptyPlaceholder={false} onPinPress={openPin} />
+          </View>
+
+          <ScrollView className="flex-1 mt-3" showsVerticalScrollIndicator={true}>
+            {gave.length === 0 ? (
+              <Text className="font-monda text-[13px] text-gray-400 text-center mt-2">Nothing</Text>
+            ) : (
+              gave.map(renderPinRow)
+            )}
+          </ScrollView>
         </View>
-      )}
+
+        <Text className="font-monda-bold text-[10px] text-gray-400 tracking-[1.4px] mb-2 text-center">
+          YOU GAVE
+        </Text>
+
+        <UserCard
+          id={me?.id ?? 'you'}
+          username={myName}
+          avatarUrl={me?.avatar_url}
+        />
+      </View>
     </View>
   )
 }

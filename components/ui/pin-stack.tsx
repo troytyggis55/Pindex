@@ -9,6 +9,11 @@ export type PinStackProps = {
   size?: 'small' | 'medium' | 'large'
   /** Render a "—" placeholder when there are no pins. Defaults to true. */
   showEmptyPlaceholder?: boolean
+  /**
+   * When provided, each card becomes tappable and calls this with its pin id.
+   * Omit to keep the stack non-interactive (taps fall through to the parent).
+   */
+  onPinPress?: (pinId: string) => void
 }
 
 /** How far each card slides under the previous one. */
@@ -26,7 +31,7 @@ const MAX_VISIBLE = 3
  * parent with `items-center` keeps the stack centered regardless of count.
  * Cards are non-interactive so taps fall through to the enclosing trade card.
  */
-export function PinStack({ pins, mirror = false, size = 'small', showEmptyPlaceholder = true }: PinStackProps) {
+export function PinStack({ pins, mirror = false, size = 'small', showEmptyPlaceholder = true, onPinPress }: PinStackProps) {
   if (pins.length === 0) {
     return showEmptyPlaceholder
       ? <Text className="font-monda text-[13px] text-gray-400">—</Text>
@@ -56,7 +61,7 @@ export function PinStack({ pins, mirror = false, size = 'small', showEmptyPlaceh
         const marginLeft = i === 0 && !(mirror && overflow > 0) ? 0 : -overlap
         const zIndex = mirror ? i + 1 : visible.length - i
         return (
-          <View key={pin.id} pointerEvents="none" style={{ marginLeft, zIndex }}>
+          <View key={pin.id} pointerEvents={onPinPress ? 'auto' : 'none'} style={{ marginLeft, zIndex }}>
             <PinCard
               id={pin.id}
               name={pin.name}
@@ -66,6 +71,7 @@ export function PinStack({ pins, mirror = false, size = 'small', showEmptyPlaceh
               size={size}
               hideName
               hideBorder
+              onPress={onPinPress ? () => onPinPress(pin.id) : undefined}
             />
           </View>
         )
