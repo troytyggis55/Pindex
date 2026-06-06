@@ -13,6 +13,7 @@ interface PinCardProps {
   flags?: Record<string, boolean>; // kept for call-site compatibility
   onPress?: () => void;
   hideName?: boolean; // hide the name label (e.g. in overlapping stacks)
+  nameColorWhite?: boolean; // force white text for name (e.g. on dark backgrounds)
   hideBorder?: boolean;
   size?: PinCardSize; // circle size (default 'medium')
 }
@@ -35,6 +36,7 @@ export function PinCard({
   isConfirmed = true,
   onPress,
   hideName = false,
+  nameColorWhite = false,
   hideBorder = false,
   size = "medium",
 }: PinCardProps) {
@@ -123,7 +125,7 @@ export function PinCard({
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
-          className="mt-1.5 font-monda-bold text-[11px] text-deep-black text-center"
+          className={`mt-1.5 font-monda-bold text-[11px] text-center ${nameColorWhite ? "text-off-white" : "text-deep-black"}`}
           style={{ width: CIRCLE_SIZE + 40 }}
         >
           {name}

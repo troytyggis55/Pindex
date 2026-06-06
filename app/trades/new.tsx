@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/auth'
 import { UserSearchModal, type Partner } from '@/components/ui/user-search-modal'
 import { UserCard } from '@/components/ui/user-card'
-import { TradePinCard } from '@/components/ui/trade-pin-card'
+import { PinStack } from '@/components/ui/pin-stack'
 import { AddPinButton } from '@/components/ui/add-pin-button'
 import { PinSearchModal } from '@/components/ui/pin-search-modal'
 import type { TradePinOption } from '@/types'
@@ -125,7 +125,7 @@ export default function NewTradeScreen() {
 
       {/* ── TOP HALF — trading partner ── */}
       <View
-        className="flex-1 px-4 pb-4"
+        className="flex-1 px-4 pb-8"
         style={{ paddingTop: insets.top + 64 }}
       >
         {/* Partner card — tap to change */}
@@ -154,23 +154,41 @@ export default function NewTradeScreen() {
           </TouchableOpacity>
         )}
 
-        <View className="flex-1 justify-center p-4">
-          <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px] text-center">
-            THEIR PINS
+        <View className="flex-1">
+          <Text className="font-monda-bold text-[10px] text-off-white tracking-[1.4px] mb-[14px] mt-2 text-center">
+            THEIR PIN
           </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          >
-            <View className="flex-row gap-4 items-start">
-              {receivedPins.map(p => (
-                <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'received')} />
-              ))}
-              {activeSearch !== 'received' && (
-                <AddPinButton onPress={() => openSearch('received')} />
-              )}
+
+          {/* 4-wide grid: add button | merged center pin stack | empty */}
+          <View className="flex-row items-center">
+            <View className="flex-1 basis-0 items-center justify-center">
+              <AddPinButton onPress={() => openSearch('received')} />
             </View>
+            <View className="flex-[2] basis-0 items-center justify-center">
+              <PinStack pins={receivedPins} size="medium" showEmptyPlaceholder={false} />
+            </View>
+            <View className="flex-1 basis-0" />
+          </View>
+
+          {/* Scrollable text list of their pins, same order as the stack */}
+          <ScrollView className="flex-1 mt-3" showsVerticalScrollIndicator={true}>
+            {receivedPins.map(p => (
+              <View
+                key={p.id}
+                className="flex-row items-center justify-between py-2.5 border-b border-white/10"
+              >
+                <Text numberOfLines={1} className="flex-1 font-monda text-[14px] text-white/80">
+                  {p.name}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => removePin(p.id, 'received')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  className="ml-3 w-7 h-7 rounded-full bg-white/[0.08] items-center justify-center"
+                >
+                  <X size={14} color="rgba(255,255,255,0.5)" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+            ))}
           </ScrollView>
         </View>
       </View>
@@ -178,7 +196,7 @@ export default function NewTradeScreen() {
       {/* ── POKEBALL DIVIDER — hidden during pin search ── */}
       {activeSearch === null && (
         <View className="h-16 items-center justify-center z-10">
-          <View className="absolute left-0 right-0 h-2 bg-white/20" />
+          <View className="absolute left-0 right-0 h-1 bg-white/20" />
           <TouchableOpacity
             onPress={submit}
             disabled={submitting}
@@ -202,28 +220,47 @@ export default function NewTradeScreen() {
 
       {/* ── BOTTOM HALF — current user ── */}
       <View
-        className="flex-1 pt-4 px-4"
+        className="flex-1 pt-8 px-4"
         style={{ paddingBottom: insets.bottom + 24 }}
       >
-        <View className="flex-1 justify-center">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          >
-            <View className="flex-row gap-4 items-start">
-              {gavePins.map(p => (
-                <TradePinCard key={p.id} pin={p} onRemove={() => removePin(p.id, 'gave')} />
-              ))}
-              {activeSearch !== 'gave' && (
-                <AddPinButton onPress={() => openSearch('gave')} />
-              )}
+        <View className="flex-1">
+
+          {/* Pin stack on the left, add button fixed on the right */}
+          <View className="flex-row items-center">
+            <View className="flex-1 basis-0 items-center justify-center">
+              <AddPinButton onPress={() => openSearch('gave')} />
             </View>
+            <View className="flex-[2] basis-0 items-center justify-center">
+              <PinStack pins={gavePins} size="medium" showEmptyPlaceholder={false} />
+            </View>
+            <View className="flex-1 basis-0" />
+          </View>
+
+          {/* Scrollable text list of your pins, same order as the stack */}
+          <ScrollView className="flex-1 mt-3" showsVerticalScrollIndicator={true}>
+            {gavePins.map(p => (
+              <View
+                key={p.id}
+                className="flex-row items-center justify-between py-2.5 border-b border-white/10"
+              >
+                <Text numberOfLines={1} className="flex-1 font-monda text-[14px] text-white/80">
+                  {p.name}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => removePin(p.id, 'gave')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  className="ml-3 w-7 h-7 rounded-full bg-white/[0.08] items-center justify-center"
+                >
+                  <X size={14} color="rgba(255,255,255,0.5)" strokeWidth={2.5} />
+                </TouchableOpacity>
+              </View>
+            ))}
           </ScrollView>
-          <Text className="font-monda-bold text-[10px] text-white/55 tracking-[1.4px] mb-[14px] text-center">
-            YOUR PINS
-          </Text>
         </View>
+
+        <Text className="font-monda-bold text-[10px] text-off-white tracking-[1.4px] mb-2 text-center">
+          YOUR PIN
+        </Text>
 
         {/* Your card — bottom edge of the pokeball */}
         <UserCard

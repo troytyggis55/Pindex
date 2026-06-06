@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { Plus } from 'lucide-react-native'
-import { PIN_CIRCLE } from '@/components/ui/trade-pin-card'
+import { PIN_CIRCLE, TRADE_CARD_WIDTH } from '@/components/ui/trade-pin-card'
 
 export type AddPinButtonProps = {
   onPress: () => void
@@ -8,7 +8,7 @@ export type AddPinButtonProps = {
 
 export function AddPinButton({ onPress }: AddPinButtonProps) {
   return (
-    <TouchableOpacity onPress={onPress} className="items-center">
+    <TouchableOpacity onPress={onPress} className="items-center" style={{ width: TRADE_CARD_WIDTH }}>
       <View
         className="items-center justify-center"
         style={{
@@ -20,14 +20,8 @@ export function AddPinButton({ onPress }: AddPinButtonProps) {
           borderColor: 'rgba(255,255,255,0.25)',
         }}
       >
-        <Plus size={22} color="rgba(255,255,255,0.4)" strokeWidth={2} />
+        <Plus size={22} color="white" strokeWidth={2} />
       </View>
-      <Text
-        className="mt-1.5 font-monda text-[11px]"
-        style={{ color: 'rgba(255,255,255,0.4)' }}
-      >
-        Add pin
-      </Text>
     </TouchableOpacity>
   )
 }

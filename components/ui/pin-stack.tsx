@@ -1,14 +1,22 @@
 import { View, Text } from 'react-native'
 import { PinCard } from '@/components/ui/pin-card'
-import type { TradeDetailItem } from '@/types'
+import type { TradePinSnap } from '@/types'
 
 export type PinStackProps = {
-  items: TradeDetailItem[]
+  pins: TradePinSnap[]
   mirror?: boolean
+  /** PinCard circle size — defaults to the compact 'small' used in trade cards. */
+  size?: 'small' | 'medium' | 'large'
+  /** Render a "—" placeholder when there are no pins. Defaults to true. */
+  showEmptyPlaceholder?: boolean
 }
 
 /** How far each card slides under the previous one. */
-const OVERLAP = 10
+const OVERLAPS: Record<NonNullable<PinStackProps['size']>, number> = {
+  small: 10,
+  medium: 30,
+  large: 30,
+}
 /** Show at most this many cards before collapsing the rest into a +N badge. */
 const MAX_VISIBLE = 3
 
@@ -18,14 +26,17 @@ const MAX_VISIBLE = 3
  * parent with `items-center` keeps the stack centered regardless of count.
  * Cards are non-interactive so taps fall through to the enclosing trade card.
  */
-export function PinStack({ items, mirror = false }: PinStackProps) {
-  if (items.length === 0) {
-    return <Text className="font-monda text-[13px] text-gray-400">—</Text>
+export function PinStack({ pins, mirror = false, size = 'small', showEmptyPlaceholder = true }: PinStackProps) {
+  if (pins.length === 0) {
+    return showEmptyPlaceholder
+      ? <Text className="font-monda text-[13px] text-gray-400">—</Text>
+      : null
   }
 
-  const visible = items.slice(0, MAX_VISIBLE)
-  const overflow = items.length - visible.length
-  const displayItems = mirror ? [...visible].reverse() : visible
+  const visible = pins.slice(0, MAX_VISIBLE)
+  const overflow = pins.length - visible.length
+  const displayPins = mirror ? [...visible].reverse() : visible
+  const overlap = OVERLAPS[size]
 
   return (
     <View className="flex-row items-center">
@@ -35,22 +46,24 @@ export function PinStack({ items, mirror = false }: PinStackProps) {
           style={{ zIndex: 0 }}
           className="rounded-full bg-gray-200 items-center justify-center"
         >
-          <Text className="font-monda-bold text-[15px] text-gray-600  mr-1">+{overflow}</Text>
+          <Text className={`font-monda-bold text-gray-500 ${size === 'small' ? 'text-[15px] px-1' : 'text-xl px-2'}`}>
+            +{overflow}
+          </Text>
         </View>
       )}
 
-      {displayItems.map((item, i) => {
-        const marginLeft = i === 0 && !(mirror && overflow > 0) ? 0 : -OVERLAP
+      {displayPins.map((pin, i) => {
+        const marginLeft = i === 0 && !(mirror && overflow > 0) ? 0 : -overlap
         const zIndex = mirror ? i + 1 : visible.length - i
         return (
-          <View key={item.id} pointerEvents="none" style={{ marginLeft, zIndex }}>
+          <View key={pin.id} pointerEvents="none" style={{ marginLeft, zIndex }}>
             <PinCard
-              id={item.pin.id}
-              name={item.pin.name}
-              imageUrl={item.pin.image_url}
-              orgColor={item.pin.organization?.color}
-              isConfirmed={item.pin.organization_id != null}
-              size="small"
+              id={pin.id}
+              name={pin.name}
+              imageUrl={pin.image_url}
+              orgColor={pin.organization?.color}
+              isConfirmed={pin.organization_id != null}
+              size={size}
               hideName
               hideBorder
             />
@@ -59,7 +72,9 @@ export function PinStack({ items, mirror = false }: PinStackProps) {
       })}
 
       {!mirror && overflow > 0 && (
-        <Text className="font-monda-bold text-[15px] text-gray-600 ml-1">+{overflow}</Text>
+        <Text className={`font-monda-bold text-gray-500 ${size === 'small' ? 'text-[15px] px-1' : 'text-xl px-2'}`}>
+          +{overflow}
+        </Text>
       )}
     </View>
   )

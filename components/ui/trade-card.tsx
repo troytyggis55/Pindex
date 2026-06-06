@@ -49,13 +49,13 @@ export function TradeCard({ trade, currentUserId, isPending = false, onPress, is
 
         <View className='flex-row px-1'>
           <View className='flex-1'>
-            <PinStack items={gave} mirror />
+            <PinStack pins={gave.map(t => t.pin)} mirror />
           </View>
           <View className='absolute inset-0 items-center justify-center'>
             <ArrowLeftRight size={16} color={Colors.dark.muted} strokeWidth={2.5} />
           </View>
           <View className='flex-1 items-end'>
-            <PinStack items={received} />
+            <PinStack pins={received.map(t => t.pin)} />
           </View>
         </View>
       </View>
