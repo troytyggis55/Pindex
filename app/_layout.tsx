@@ -50,8 +50,9 @@ function RootLayoutNav() {
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
-      {/* reset-password is intentionally unguarded: a recovery deep link creates
-          a session, so it must stay reachable in any auth state. */}
+      {/* enter-code and reset-password are intentionally unguarded: verifying
+          the recovery code creates a session, so they must stay reachable in
+          any auth state. */}
     </Stack>
   )
 }

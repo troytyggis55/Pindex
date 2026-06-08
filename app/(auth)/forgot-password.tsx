@@ -14,15 +14,15 @@ export default function ForgotPasswordScreen() {
     const trimmed = email.trim()
     if (!trimmed) return
     setLoading(true)
-    // Sends a recovery email containing a 6-digit code (no deep link). The
-    // code is verified on the reset-password screen via verifyOtp.
+    // Sends a recovery email containing a code (no deep link). The code is
+    // verified on the enter-code screen via verifyOtp.
     const { error } = await supabase.auth.resetPasswordForEmail(trimmed)
     setLoading(false)
     if (error) {
       Alert.alert('Error', error.message)
       return
     }
-    router.push({ pathname: '/reset-password', params: { email: trimmed } })
+    router.push({ pathname: '/enter-code', params: { email: trimmed } })
   }
 
   return (
