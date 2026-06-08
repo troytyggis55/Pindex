@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { Link } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { supabase } from '@/lib/supabase'
+import { Colors } from '@/constants/theme'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -19,45 +21,56 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 28, fontWeight: 'bold' }}>Pindex</Text>
-      <Text style={{ fontSize: 18 }}>Sign in</Text>
+    <KeyboardAwareScrollView
+      className="flex-1 bg-off-white"
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={72}
+    >
+      <View className="flex-1 justify-center px-6 gap-3">
+        <Text className="font-monda-bold text-3xl text-deep-black">Pindex</Text>
+        <Text className="font-monda text-lg text-deep-black mb-2">Sign in</Text>
 
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        className='border border-gray-500 p-3 rounded-lg color-black'
-        placeholderTextColor='gray'
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        className='border border-gray-500 p-3 rounded-lg color-black'
-        placeholderTextColor='gray'
-      />
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          placeholderTextColor={Colors.light.muted}
+          className="border border-gray-300 rounded-btn px-4 py-3 font-monda text-base text-deep-black bg-white"
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete="current-password"
+          placeholderTextColor={Colors.light.muted}
+          className="border border-gray-300 rounded-btn px-4 py-3 font-monda text-base text-deep-black bg-white"
+        />
 
-      <TouchableOpacity
-        onPress={signInWithEmail}
-        disabled={loading}
-        style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
-      >
-        <Text style={{ color: '#fff' }}>{loading ? 'Signing in...' : 'Sign in'}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={signInWithEmail}
+          disabled={loading}
+          className="bg-deep-black rounded-btn py-4 items-center mt-1"
+        >
+          <Text className="font-monda-bold text-off-white">
+            {loading ? 'Signing in...' : 'Sign in'}
+          </Text>
+        </TouchableOpacity>
 
-      <Link href="/(auth)/forgot-password">
-        <Text style={{ textAlign: 'center', color: '#555' }}>Forgot password?</Text>
-      </Link>
+        <Link href="/(auth)/forgot-password" className="mt-2">
+          <Text className="text-center font-monda text-gray-500">Forgot password?</Text>
+        </Link>
 
-      <Link href="/(auth)/signup">
-        <Text style={{ textAlign: 'center', color: '#555' }}>
-          Don&apos;t have an account? Sign up
-        </Text>
-      </Link>
-    </View>
+        <Link href="/(auth)/signup">
+          <Text className="text-center font-monda text-gray-500">
+            Don&apos;t have an account? Sign up
+          </Text>
+        </Link>
+      </View>
+    </KeyboardAwareScrollView>
   )
 }

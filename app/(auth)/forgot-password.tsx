@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { Link, useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
+import { Colors } from '@/constants/theme'
 
 export default function ForgotPasswordScreen() {
   const router = useRouter()
@@ -24,33 +26,44 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 28, fontWeight: 'bold' }}>Pindex</Text>
-      <Text style={{ fontSize: 18 }}>Reset password</Text>
-      <Text style={{ color: '#555' }}>
-        Enter your email and we'll send you a 6-digit code to reset your password.
-      </Text>
+    <KeyboardAwareScrollView
+      className="flex-1 bg-off-white"
+      contentContainerStyle={{ flexGrow: 1 }}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={72}
+    >
+      <View className="flex-1 justify-center px-6 gap-3">
+        <Text className="font-monda-bold text-3xl text-deep-black">Pindex</Text>
+        <Text className="font-monda text-lg text-deep-black">Reset password</Text>
+        <Text className="font-monda text-gray-500 mb-2">
+          Enter your email and we&apos;ll send you a 6-digit code to reset your password.
+        </Text>
 
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={{ borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 8 }}
-      />
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          placeholderTextColor={Colors.light.muted}
+          className="border border-gray-300 rounded-btn px-4 py-3 font-monda text-base text-deep-black bg-white"
+        />
 
-      <TouchableOpacity
-        onPress={sendReset}
-        disabled={loading}
-        style={{ backgroundColor: '#000', padding: 14, borderRadius: 8, alignItems: 'center' }}
-      >
-        <Text style={{ color: '#fff' }}>{loading ? 'Sending...' : 'Send reset code'}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={sendReset}
+          disabled={loading}
+          className="bg-deep-black rounded-btn py-4 items-center mt-1"
+        >
+          <Text className="font-monda-bold text-off-white">
+            {loading ? 'Sending...' : 'Send reset code'}
+          </Text>
+        </TouchableOpacity>
 
-      <Link href="/(auth)/login">
-        <Text style={{ textAlign: 'center', color: '#555' }}>Back to sign in</Text>
-      </Link>
-    </View>
+        <Link href="/(auth)/login" className="mt-2">
+          <Text className="text-center font-monda text-gray-500">Back to sign in</Text>
+        </Link>
+      </View>
+    </KeyboardAwareScrollView>
   )
 }
