@@ -206,21 +206,21 @@ export type Database = {
           created_at: string
           id: string
           role: string
-          username: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           id: string
           role?: string
-          username: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           id?: string
           role?: string
-          username?: string
+          username?: string | null
         }
         Relationships: []
       }

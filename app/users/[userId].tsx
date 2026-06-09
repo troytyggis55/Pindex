@@ -38,7 +38,7 @@ export default function UserProfileScreen() {
       supabase.from('follows').select('follower_id').eq('follower_id', myId).eq('following_id', userId).maybeSingle(),
     ])
     if (profileRes.data) {
-      setUsername(profileRes.data.username)
+      setUsername(profileRes.data.username ?? '')
       setAvatarUrl(profileRes.data.avatar_url ?? null)
     }
     if (pinsRes.data) setWantToTradePins(pinsRes.data as PinItem[])
@@ -114,7 +114,6 @@ export default function UserProfileScreen() {
                 id={item.id}
                 name={item.pin.name}
                 imageUrl={item.pin.image_url}
-                orgName={item.pin.organization?.name ?? 'Independent'}
                 orgLogoUrl={item.pin.organization?.logo_url}
                 isConfirmed={item.pin.org_claimed_at != null}
                 onPress={() => router.push(`/pins/${item.pin_id}`)}

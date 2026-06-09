@@ -52,8 +52,11 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
         .select('id, username, avatar_url')
         .ilike('username', `%${query}%`)
         .neq('id', userId)
+        .not('username', 'is', null)
         .limit(8)
-        .then(({ data }) => setResults(data ?? []))
+        .then(({ data }) =>
+          setResults((data ?? []).filter((p): p is ProfileResult => p.username !== null)),
+        )
     }, 300)
     return () => clearTimeout(timer)
   }, [query, userId])

@@ -189,11 +189,11 @@ export default function OrgAdminScreen() {
       .eq('username', username)
       .single()
     setSearching(false)
-    if (error || !data) {
+    if (error || !data || data.username === null) {
       Alert.alert('Not found', `No user found with username "${username}".`)
       return
     }
-    setTransferCandidate(data)
+    setTransferCandidate({ id: data.id, username: data.username })
   }
 
   const confirmTransfer = () => {

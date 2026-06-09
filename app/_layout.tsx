@@ -13,7 +13,10 @@ SplashScreen.preventAutoHideAsync()
 
 function RootLayoutNav() {
   const { session, profile, loading, profileLoading } = useAuth()
-  const authed = !!session && !!profile
+  // A profile row exists for every authed user (created by the new-user trigger),
+  // but `username` is null until they pick one. Treat "no username" as not fully
+  // authed so the (auth) group can force them through choose-username first.
+  const authed = !!session && !!profile?.username
 
   // Hold a splash until auth state is fully known so we never flash an auth
   // screen first. The second clause keeps the splash up while the initial

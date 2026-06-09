@@ -5,8 +5,8 @@ export default function AuthLayout() {
   const { session } = useAuth()
 
   // The root layout only mounts this group when the user isn't fully
-  // authenticated. A session here means the account exists but has no profile
-  // yet, so route them to complete-profile; otherwise show the sign-in screens.
+  // authenticated. A session here means the account exists but hasn't chosen a
+  // username yet, so route them to complete-profile; otherwise show sign-in.
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!session}>
