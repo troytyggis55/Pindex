@@ -33,7 +33,11 @@ export function UserSearchModal({ visible, userId, onSelect, onClose }: PartnerM
       .order('created_at', { referencedTable: 'profiles', ascending: false })
       .limit(20)
       .then(({ data }) => {
-        setFollowing((data ?? []).flatMap(row => (row.profile ? [row.profile as ProfileResult] : [])))
+        setFollowing(
+          (data ?? []).flatMap(row =>
+            row.profile && row.profile.username ? [row.profile as ProfileResult] : [],
+          ),
+        )
       })
   }, [userId])
 

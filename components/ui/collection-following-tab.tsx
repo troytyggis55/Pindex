@@ -16,8 +16,9 @@ export function CollectionFollowingTab() {
   const buildQuery = useCallback(
     (sb: typeof supabase) =>
       sb.from('follows')
-        .select('id:following_id, profile:profiles!following_id(id, username, avatar_url)')
-        .eq('follower_id', myId),
+        .select('id:following_id, profile:profiles!following_id!inner(id, username, avatar_url)')
+        .eq('follower_id', myId)
+        .not('profile.username', 'is', null),
     [myId]
   )
 

@@ -46,7 +46,10 @@ export default function PinDetailScreen() {
     ])
     if (pinRes.data) setPin(pinRes.data as PinWithOrg)
     if (upRes.data) setUserPin(upRes.data)
-    if (tradersRes.data) setTraders(tradersRes.data as WantToTrader[])
+    if (tradersRes.data)
+      setTraders(
+        (tradersRes.data as WantToTrader[]).filter(t => t.profile?.username),
+      )
     setLoading(false)
     setRefreshing(false)
   }, [pinId, session?.user.id])

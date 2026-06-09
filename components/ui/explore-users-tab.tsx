@@ -27,7 +27,11 @@ export function ExploreUsersTab({ query }: ExploreUsersTabProps) {
 
   const buildQuery = useCallback(
     (sb: typeof supabase) => {
-      let base = sb.from('profiles').select('id, username, avatar_url').neq('id', myId)
+      let base = sb
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .neq('id', myId)
+        .not('username', 'is', null)
       if (q) base = base.ilike('username', `%${q}%`)
       return base.order('username')
     },
