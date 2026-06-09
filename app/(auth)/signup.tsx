@@ -1,24 +1,29 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Colors } from '@/constants/theme'
 
 export default function SignupScreen() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
   const signUp = async () => {
+    const trimmed = email.trim()
     setLoading(true)
-    const { error } = await supabase.auth.signUp({ email, password })
+    // With "Confirm email" enabled, this sends a confirmation email containing a
+    // code (no session is created until it's verified). The code is verified on
+    // the enter-code screen via verifyOtp — we deliberately avoid the deep link.
+    const { error } = await supabase.auth.signUp({ email: trimmed, password })
+    setLoading(false)
     if (error) {
       Alert.alert('Sign up failed', error.message)
-    } else {
-      Alert.alert('Check your email', 'A confirmation link has been sent to ' + email)
+      return
     }
-    setLoading(false)
+    router.push({ pathname: '/enter-code', params: { email: trimmed, type: 'signup' } })
   }
 
   return (
